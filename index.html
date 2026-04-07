@@ -2,8 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>WristDesk Pro — Watch Inventory & Analytics</title>
+<!-- PWA & iOS -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WristDesk">
+<meta name="theme-color" content="#060911">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -546,6 +554,140 @@ body::before{
 
 /* ── STAGGER ANIMATIONS ── */
 .view.active .dash-grid{animation:cardReveal 0.5s var(--ease) 0.15s both}
+
+/* ═══════════════════════════════════════════════════
+   MOBILE — Bottom tab bar, responsive grids
+   ═══════════════════════════════════════════════════ */
+@media(max-width:768px){
+  /* Safe areas for notch / home indicator */
+  body{padding:env(safe-area-inset-top) 0 0 0;height:100dvh}
+
+  /* Grid becomes single column, sidebar hidden */
+  .app{grid-template-columns:1fr;grid-template-rows:1fr auto}
+  .sidebar{
+    display:none;position:fixed;inset:0;z-index:90;
+    background:rgba(6,9,17,0.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+    flex-direction:column;padding-top:env(safe-area-inset-top);
+  }
+  .sidebar.mobile-open{display:flex}
+
+  /* Bottom tab bar */
+  .mobile-tabbar{
+    display:flex;
+    background:var(--navy-deepest);
+    border-top:1px solid rgba(201,169,110,0.08);
+    padding:0.35rem 0.25rem calc(0.35rem + env(safe-area-inset-bottom));
+    gap:2px;order:2;
+    position:relative;z-index:50;
+  }
+  .mobile-tabbar::before{
+    content:'';position:absolute;top:0;left:1rem;right:1rem;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(201,169,110,0.15),transparent);
+  }
+  .mobile-tab{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+    padding:0.4rem 0;border-radius:8px;
+    color:var(--text-faint);font-size:0.58rem;font-weight:500;
+    letter-spacing:0.03em;transition:all var(--transition);
+    background:none;border:none;cursor:pointer;
+    font-family:var(--font-body);
+    -webkit-tap-highlight-color:transparent;
+  }
+  .mobile-tab i{width:18px;height:18px}
+  .mobile-tab.active{color:var(--gold)}
+  .mobile-tab:active{transform:scale(0.92)}
+
+  /* Topbar adjustments */
+  .topbar{padding:0 0.75rem;height:50px;padding-top:env(safe-area-inset-top)}
+  .topbar-left{gap:0.5rem}
+  .page-title{font-size:var(--text-base)}
+  .page-badge{font-size:0.5rem;padding:2px 6px}
+  .search-bar{display:none}
+  .search-bar.mobile-show{display:flex;position:absolute;left:0.5rem;right:0.5rem;top:100%;margin-top:0.25rem;z-index:20;background:var(--navy-mid);border-radius:8px}
+  .search-bar.mobile-show input{width:100%}
+  .add-btn span{display:none}
+  .add-btn{padding:0;width:34px;justify-content:center}
+  .topbar-right{gap:0.35rem}
+
+  /* Hamburger button in topbar */
+  .mobile-menu-btn{
+    display:flex;align-items:center;justify-content:center;
+    width:34px;height:34px;border-radius:6px;
+    color:var(--text-secondary);transition:all var(--transition);
+    background:none;border:none;cursor:pointer;order:-1;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .mobile-menu-btn:hover{color:var(--gold);background:var(--gold-dim)}
+
+  /* KPI grid responsive */
+  .kpi-grid{grid-template-columns:repeat(2,1fr)!important;gap:0.5rem}
+  .kpi-grid .kpi-card:nth-child(5){grid-column:1/-1}
+  .kpi-card{padding:0.85rem 0.75rem}
+  .kpi-value{font-size:var(--text-lg)}
+
+  /* Dashboard grid single column */
+  .dash-grid{grid-template-columns:1fr!important}
+
+  /* View scroll padding */
+  .view-scroll{padding:0.75rem}
+
+  /* Tables: horizontal scroll with hint */
+  .inv-table td,.inv-table th{padding:0.5rem 0.6rem;font-size:var(--text-xs)}
+  .watch-name{font-size:var(--text-sm)}
+
+  /* Profit banner stack */
+  .profit-banner{flex-direction:column;gap:0.75rem;text-align:center;padding:1rem}
+  .profit-banner>div{text-align:center!important}
+
+  /* Sold KPI grid */
+  #sold-kpis{grid-template-columns:repeat(2,1fr)!important}
+
+  /* Modals full-width on mobile */
+  .modal{width:100%;max-width:100vw;border-radius:12px 12px 0 0;position:fixed;bottom:0;left:0;right:0;transform:translateY(100%);max-height:90vh;overflow-y:auto}
+  .modal-overlay.open .modal{transform:translateY(0)}
+  .sold-card,.delete-card{width:100%;max-width:100vw;border-radius:12px 12px 0 0;position:fixed;bottom:0;left:0;right:0;transform:translateY(100%)}
+  .sold-overlay.open .sold-card,.delete-overlay.open .delete-card{transform:translateY(0)}
+  .form-grid{grid-template-columns:1fr}
+
+  /* AI panel */
+  .ai-messages{max-height:220px;min-height:150px}
+  .ai-input{font-size:16px} /* prevents iOS zoom on focus */
+  .form-input,.sold-price-input{font-size:16px}
+
+  /* Action buttons bigger for touch */
+  .action-btn{width:34px;height:34px}
+
+  /* Chart smaller */
+  .chart-container{height:160px}
+
+  /* Toast positioning */
+  .toast-container{bottom:calc(4rem + env(safe-area-inset-bottom));right:0.5rem;left:0.5rem}
+  .toast{max-width:100%}
+
+  /* Cards */
+  .card-header{padding:0.75rem 1rem}
+  .card-body{padding:0.75rem 1rem}
+  .card-title{font-size:var(--text-sm)}
+
+  /* Identify grid */
+  .identify-grid{grid-template-columns:1fr 1fr 1fr;gap:0.4rem}
+}
+
+/* Extra small phones */
+@media(max-width:380px){
+  .kpi-grid{grid-template-columns:1fr!important}
+  .identify-grid{grid-template-columns:1fr!important}
+  .mobile-tab{font-size:0.52rem}
+  .mobile-tab i{width:16px;height:16px}
+}
+
+/* Hide mobile elements on desktop */
+.mobile-tabbar{display:none}
+.mobile-menu-btn{display:none}
+@media(max-width:768px){
+  .mobile-tabbar{display:flex}
+  .mobile-menu-btn{display:flex}
+}
 </style>
 </head>
 <body>
@@ -601,6 +743,7 @@ body::before{
 <div class="main">
   <header class="topbar">
     <div class="topbar-left">
+      <button class="mobile-menu-btn" onclick="toggleMobileSidebar()" aria-label="Menu"><i data-lucide="menu" style="width:18px;height:18px;"></i></button>
       <span class="page-title" id="page-title">Dashboard</span>
       <span class="page-badge" id="page-badge">LIVE</span>
     </div>
@@ -767,6 +910,14 @@ body::before{
     </div>
   </div>
 </div>
+<!-- MOBILE BOTTOM TAB BAR -->
+<nav class="mobile-tabbar" id="mobile-tabbar">
+  <button class="mobile-tab active" data-view="dashboard" onclick="mobileNav('dashboard',this)"><i data-lucide="layout-dashboard"></i>Home</button>
+  <button class="mobile-tab" data-view="inventory" onclick="mobileNav('inventory',this)"><i data-lucide="package"></i>Inventory</button>
+  <button class="mobile-tab" data-view="sold" onclick="mobileNav('sold',this)"><i data-lucide="check-circle-2"></i>Sold</button>
+  <button class="mobile-tab" data-view="lookup" onclick="mobileNav('lookup',this)"><i data-lucide="search"></i>Lookup</button>
+  <button class="mobile-tab" data-view="ai" onclick="mobileNav('ai',this)"><i data-lucide="bot"></i>AI</button>
+</nav>
 </div>
 
 <!-- ADD WATCH MODAL -->
@@ -1088,6 +1239,32 @@ function switchView(v,btn){document.querySelectorAll('.view').forEach(el=>el.cla
 function renderAll(){renderKPIs();renderDashTable();renderChart();renderFullTable();renderSoldTable();lucide.createIcons();}
 
 document.addEventListener('keydown',e=>{if(e.key==='n'&&(e.metaKey||e.ctrlKey)){e.preventDefault();openAddModal();}if(e.key==='/'&&!e.target.closest('input,textarea')){e.preventDefault();document.getElementById('global-search').focus();}});
+
+// ── MOBILE NAV ──
+function mobileNav(view,btn){
+  document.querySelectorAll('.mobile-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  // Also sync sidebar nav
+  const sidebarBtn=document.querySelector(`.nav-item[data-view="${view}"]`);
+  switchView(view,sidebarBtn);
+}
+function toggleMobileSidebar(){
+  const sb=document.querySelector('.sidebar');
+  sb.classList.toggle('mobile-open');
+  // Close on nav click
+  if(sb.classList.contains('mobile-open')){
+    sb.querySelectorAll('.nav-item').forEach(item=>{
+      item.addEventListener('click',()=>{
+        sb.classList.remove('mobile-open');
+        // Sync bottom tab
+        const v=item.getAttribute('data-view');
+        document.querySelectorAll('.mobile-tab').forEach(t=>t.classList.remove('active'));
+        const tab=document.querySelector(`.mobile-tab[data-view="${v}"]`);
+        if(tab)tab.classList.add('active');
+      },{once:true});
+    });
+  }
+}
 
 window.addEventListener('DOMContentLoaded',()=>{
   renderAll();
