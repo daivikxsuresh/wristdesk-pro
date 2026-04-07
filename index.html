@@ -682,10 +682,22 @@ body::before{
    ═══════════════════════════════════════════════════ */
 @media(max-width:768px){
   /* Safe areas for notch / home indicator */
-  body{padding:env(safe-area-inset-top) 0 0 0;height:100dvh}
+  body{padding:env(safe-area-inset-top) 0 0 0;height:100dvh;overflow:hidden}
 
   /* Grid becomes single column, sidebar hidden */
-  .app{grid-template-columns:1fr;grid-template-rows:1fr auto}
+  .app{grid-template-columns:1fr;grid-template-rows:1fr auto;height:100dvh;overflow:hidden}
+
+  /* Main needs to fill remaining space and allow view-scroll to scroll */
+  .main{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+
+  /* Views must shrink to fit — min-height:0 breaks flexbox overflow trap */
+  .view.active{flex:1;min-height:0;overflow:hidden}
+
+  /* View-scroll is the ONLY scrollable layer */
+  .view-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0.75rem;padding-bottom:1.5rem}
+
+  /* AI full view also needs to scroll */
+  #view-ai>div{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
   .sidebar{
     display:none;position:fixed;inset:0;z-index:90;
     background:rgba(6,9,17,0.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
@@ -769,8 +781,7 @@ body::before{
   /* ── Hide AI panel on mobile dashboard ── */
   #view-dashboard .ai-panel{display:none}
 
-  /* View scroll padding */
-  .view-scroll{padding:0.75rem}
+  /* View scroll padding — keep scroll properties from earlier rule */
 
   /* Tables: horizontal scroll */
   .inv-table td,.inv-table th{padding:0.5rem 0.6rem;font-size:var(--text-xs)}
