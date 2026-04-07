@@ -17,6 +17,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
 /* ═══════════════════════════════════════════════════
    SWISS VAULT — Luxury Horlogerie Dashboard
@@ -1203,6 +1206,20 @@ function lookupC24(brand,model,cond){
   return{low:Math.round(base*0.9/100)*100,fair:base,high:Math.round(base*1.12/100)*100,comps:Math.floor(Math.random()*40)+12,matched:`${brand} ${model}`};
 }
 
+// ── FIREBASE ──
+const firebaseConfig={
+  apiKey:"AIzaSyAeZ5ynZC2V3MqejL8cWF2fzNLZv7vjXmw",
+  authDomain:"wristdeck-pro.firebaseapp.com",
+  projectId:"wristdeck-pro",
+  storageBucket:"wristdeck-pro.firebasestorage.app",
+  messagingSenderId:"890203565687",
+  appId:"1:890203565687:web:e931a4c9ed24a051aea072",
+  measurementId:"G-0FT8QR10G8"
+};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.firestore();
+const DOC_REF=db.collection('dealers').doc('default');
+
 // ── PERSISTENCE ──
 const STORAGE_KEY='wristdesk_pro_inventory';
 const DEFAULT_INV=[
@@ -1215,7 +1232,31 @@ const DEFAULT_INV=[
   {id:7,brand:'Rolex',model:'Datejust',ref:'126334',year:'2021',condition:'Good',buyPrice:9500,buyDate:'2026-01-05',channel:'Private',market:11200,status:'Sold',soldPrice:11200,soldDate:'2026-02-20'},
 ];
 function loadInv(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}return JSON.parse(JSON.stringify(DEFAULT_INV));}
-function saveInv(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(inventory));}catch(e){}}
+function saveInv(){
+  // Save to localStorage (offline cache)
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(inventory));}catch(e){}
+  // Save to Firestore (cloud sync)
+  DOC_REF.set({inventory:JSON.parse(JSON.stringify(inventory)),updatedAt:firebase.firestore.FieldValue.serverTimestamp()}).catch(e=>console.warn('Firestore save failed:',e));
+}
+
+// ── REAL-TIME SYNC — listen for changes from other devices ──
+let firestoreReady=false;
+DOC_REF.onSnapshot(snap=>{
+  if(!snap.exists){
+    // First time: push local data to Firestore
+    DOC_REF.set({inventory:JSON.parse(JSON.stringify(inventory)),updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    firestoreReady=true;
+    return;
+  }
+  const data=snap.data();
+  if(data&&data.inventory){
+    inventory=data.inventory;
+    nextId=Math.max(...inventory.map(w=>w.id),0)+1;
+    try{localStorage.setItem(STORAGE_KEY,JSON.stringify(inventory));}catch(e){}
+    if(firestoreReady)renderAll();
+    firestoreReady=true;
+  }
+},err=>{console.warn('Firestore listen error:',err);firestoreReady=true;});
 
 let inventory=loadInv();
 let nextId=Math.max(...inventory.map(w=>w.id),0)+1;
