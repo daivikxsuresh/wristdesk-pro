@@ -1,249 +1,551 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>WristDesk Pro — Watch Inventory & Analytics</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 <style>
-:root,[data-theme="dark"]{
-  --color-bg:#0d0d0f;--color-surface:#141417;--color-surface-2:#1a1a1e;
-  --color-surface-offset:#1f1f24;--color-surface-dynamic:#26262c;
-  --color-divider:#2a2a30;--color-border:#303038;
-  --color-text:#e8e8ec;--color-text-muted:#8888a0;--color-text-faint:#44444e;
-  --color-primary:#7c6dfa;--color-primary-hover:#9b8ffb;
-  --color-primary-highlight:rgba(124,109,250,0.12);
-  --color-success:#4ade80;--color-success-dim:rgba(74,222,128,0.12);
-  --color-error:#f87171;--color-error-dim:rgba(248,113,113,0.12);
-  --color-warning:#fbbf24;--color-warning-dim:rgba(251,191,36,0.12);
-  --color-gold:#e8c96a;--color-teal:#2dd4bf;
-  --font-body:'Inter',system-ui,sans-serif;
-  --font-mono:'JetBrains Mono',monospace;
-  --text-xs:clamp(0.7rem,0.65rem+0.25vw,0.8rem);
-  --text-sm:clamp(0.8rem,0.75rem+0.3vw,0.9rem);
-  --text-base:clamp(0.9rem,0.85rem+0.25vw,1rem);
-  --text-lg:clamp(1rem,0.9rem+0.5vw,1.25rem);
-  --text-xl:clamp(1.25rem,1rem+1vw,1.75rem);
-  --space-1:0.25rem;--space-2:0.5rem;--space-3:0.75rem;--space-4:1rem;
-  --space-5:1.25rem;--space-6:1.5rem;--space-8:2rem;--space-10:2.5rem;
-  --radius-sm:0.375rem;--radius-md:0.5rem;--radius-lg:0.75rem;--radius-xl:1rem;
-  --radius-full:9999px;
-  --shadow-sm:0 1px 3px rgba(0,0,0,0.4);--shadow-md:0 4px 12px rgba(0,0,0,0.5);
-  --shadow-lg:0 12px 32px rgba(0,0,0,0.6);
-  --transition:180ms cubic-bezier(0.16,1,0.3,1);
-}
-[data-theme="light"]{
-  --color-bg:#f5f5f7;--color-surface:#ffffff;--color-surface-2:#fafafa;
-  --color-surface-offset:#f0f0f5;--color-surface-dynamic:#e8e8f0;
-  --color-divider:#e0e0ea;--color-border:#d0d0dc;
-  --color-text:#111118;--color-text-muted:#55556a;--color-text-faint:#aaaabc;
-  --color-primary:#5b4fd8;--color-primary-hover:#4338ca;
-  --color-primary-highlight:rgba(91,79,216,0.1);
-  --shadow-sm:0 1px 3px rgba(0,0,0,0.08);--shadow-md:0 4px 12px rgba(0,0,0,0.1);
-  --shadow-lg:0 12px 32px rgba(0,0,0,0.14);
+/* ═══════════════════════════════════════════════════
+   SWISS VAULT — Luxury Horlogerie Dashboard
+   Midnight navy, champagne gold, editorial serifs
+   ═══════════════════════════════════════════════════ */
+:root{
+  --navy-deepest:#060911;
+  --navy-deep:#0a0e1a;
+  --navy:#0f1525;
+  --navy-mid:#151d32;
+  --navy-light:#1c2640;
+  --navy-lighter:#25314f;
+  --navy-muted:#3a4a6b;
+  --gold:#c9a96e;
+  --gold-bright:#dfc088;
+  --gold-pale:#e8d5a8;
+  --gold-dim:rgba(201,169,110,0.12);
+  --gold-glow:rgba(201,169,110,0.06);
+  --cream:#f4efe6;
+  --cream-muted:#bfb8a8;
+  --text-primary:#e2ddd4;
+  --text-secondary:#8b8a85;
+  --text-faint:#4d5060;
+  --green:#6fcf97;
+  --green-dim:rgba(111,207,151,0.12);
+  --red:#e87c7c;
+  --red-dim:rgba(232,124,124,0.12);
+  --amber:#e8c44d;
+  --amber-dim:rgba(232,196,77,0.12);
+  --font-display:'Cormorant Garamond',Georgia,'Times New Roman',serif;
+  --font-body:'Outfit',system-ui,sans-serif;
+  --font-mono:'IBM Plex Mono',monospace;
+  --text-xs:0.72rem;--text-sm:0.82rem;--text-base:0.92rem;
+  --text-lg:1.1rem;--text-xl:1.5rem;--text-2xl:2rem;--text-3xl:2.8rem;
+  --ease:cubic-bezier(0.16,1,0.3,1);
+  --transition:220ms var(--ease);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
-body{font-family:var(--font-body);font-size:var(--text-sm);color:var(--color-text);background:var(--color-bg);height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{
+  font-family:var(--font-body);font-size:var(--text-sm);
+  color:var(--text-primary);background:var(--navy-deep);
+  height:100dvh;overflow:hidden;
+}
 button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 input,textarea,select{font:inherit;color:inherit}
 table{border-collapse:collapse;width:100%}
-.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums lining-nums}
 
-/* LAYOUT */
-.app{display:grid;grid-template-columns:220px 1fr;grid-template-rows:1fr;height:100dvh;overflow:hidden}
-.sidebar{background:var(--color-surface);border-right:1px solid var(--color-divider);display:flex;flex-direction:column;overflow:hidden}
-.main{display:flex;flex-direction:column;overflow:hidden}
+/* ── GRAIN OVERLAY ── */
+body::before{
+  content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
+  opacity:0.03;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat:repeat;background-size:200px;
+}
 
-/* SIDEBAR */
-.sidebar-logo{padding:var(--space-5) var(--space-4);border-bottom:1px solid var(--color-divider);display:flex;align-items:center;gap:var(--space-3)}
-.sidebar-logo svg{color:var(--color-primary)}
-.logo-text{font-size:var(--text-base);font-weight:700;letter-spacing:-0.02em}
-.logo-sub{font-size:var(--text-xs);color:var(--color-text-muted);margin-top:1px}
-.sidebar-nav{flex:1;padding:var(--space-3) var(--space-2);display:flex;flex-direction:column;gap:2px}
-.nav-item{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-3);border-radius:var(--radius-md);font-size:var(--text-sm);color:var(--color-text-muted);transition:all var(--transition);cursor:pointer;border:none;background:none;text-align:left;width:100%}
-.nav-item:hover{color:var(--color-text);background:var(--color-surface-offset)}
-.nav-item.active{color:var(--color-primary);background:var(--color-primary-highlight)}
-.nav-item i{width:16px;height:16px;flex-shrink:0}
-.nav-section{font-size:var(--text-xs);color:var(--color-text-faint);padding:var(--space-4) var(--space-3) var(--space-1);text-transform:uppercase;letter-spacing:0.08em;font-weight:600}
-.sidebar-footer{padding:var(--space-3) var(--space-2);border-top:1px solid var(--color-divider);display:flex;flex-direction:column;gap:var(--space-1)}
-.status-dot{width:6px;height:6px;border-radius:var(--radius-full);background:var(--color-success);animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
-.live-badge{display:flex;align-items:center;gap:var(--space-2);font-size:var(--text-xs);color:var(--color-text-muted);padding:var(--space-2) var(--space-3)}
+/* ── LAYOUT ── */
+.app{display:grid;grid-template-columns:240px 1fr;height:100dvh;overflow:hidden}
 
-/* TOPBAR */
-.topbar{background:var(--color-surface);border-bottom:1px solid var(--color-divider);padding:0 var(--space-5);height:52px;display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);flex-shrink:0}
-.topbar-left{display:flex;align-items:center;gap:var(--space-3)}
-.page-title{font-size:var(--text-base);font-weight:600}
-.page-badge{font-size:var(--text-xs);padding:2px var(--space-2);border-radius:var(--radius-full);background:var(--color-primary-highlight);color:var(--color-primary);font-weight:500}
-.topbar-right{display:flex;align-items:center;gap:var(--space-2)}
-.icon-btn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:var(--radius-md);color:var(--color-text-muted);transition:all var(--transition)}
-.icon-btn:hover{color:var(--color-text);background:var(--color-surface-offset)}
-.add-btn{display:flex;align-items:center;gap:var(--space-2);padding:0 var(--space-4);height:32px;background:var(--color-primary);color:#fff;border-radius:var(--radius-md);font-size:var(--text-sm);font-weight:600;transition:all var(--transition)}
-.add-btn:hover{background:var(--color-primary-hover)}
+/* ── SIDEBAR ── */
+.sidebar{
+  background:var(--navy-deepest);
+  border-right:1px solid rgba(201,169,110,0.08);
+  display:flex;flex-direction:column;overflow:hidden;
+  position:relative;
+}
+.sidebar::after{
+  content:'';position:absolute;top:0;right:0;bottom:0;width:1px;
+  background:linear-gradient(to bottom,transparent,var(--gold),transparent);
+  opacity:0.15;
+}
+.sidebar-brand{
+  padding:1.5rem 1.25rem;
+  border-bottom:1px solid rgba(201,169,110,0.08);
+  display:flex;align-items:center;gap:0.75rem;
+}
+.brand-mark{
+  width:38px;height:38px;position:relative;
+  display:flex;align-items:center;justify-content:center;
+}
+.brand-mark svg{color:var(--gold);opacity:0.9}
+.brand-name{
+  font-family:var(--font-display);font-size:1.3rem;font-weight:400;
+  letter-spacing:0.02em;color:var(--gold-pale);line-height:1.1;
+}
+.brand-sub{
+  font-size:var(--text-xs);color:var(--text-faint);
+  text-transform:uppercase;letter-spacing:0.18em;font-weight:500;
+  margin-top:2px;
+}
+.sidebar-nav{flex:1;padding:1rem 0.75rem;display:flex;flex-direction:column;gap:2px}
+.nav-section{
+  font-size:0.62rem;color:var(--gold);opacity:0.5;
+  padding:1.25rem 0.75rem 0.4rem;
+  text-transform:uppercase;letter-spacing:0.2em;font-weight:600;
+}
+.nav-item{
+  display:flex;align-items:center;gap:0.7rem;
+  padding:0.55rem 0.75rem;border-radius:6px;
+  font-size:var(--text-sm);color:var(--text-secondary);
+  transition:all var(--transition);width:100%;text-align:left;
+  position:relative;font-weight:400;letter-spacing:0.01em;
+}
+.nav-item:hover{color:var(--text-primary);background:rgba(201,169,110,0.05)}
+.nav-item.active{
+  color:var(--gold);background:var(--gold-dim);
+}
+.nav-item.active::before{
+  content:'';position:absolute;left:0;top:25%;bottom:25%;
+  width:2px;background:var(--gold);border-radius:1px;
+}
+.nav-item i{width:16px;height:16px;flex-shrink:0;opacity:0.7}
+.nav-item.active i{opacity:1}
+.sidebar-footer{
+  padding:0.75rem;border-top:1px solid rgba(201,169,110,0.08);
+  display:flex;flex-direction:column;gap:2px;
+}
+.live-indicator{
+  display:flex;align-items:center;gap:0.5rem;
+  padding:0.4rem 0.75rem;font-size:var(--text-xs);color:var(--text-faint);
+}
+.live-dot{
+  width:5px;height:5px;border-radius:50%;background:var(--green);
+  animation:livePulse 2.5s ease-in-out infinite;
+}
+@keyframes livePulse{0%,100%{opacity:1;box-shadow:0 0 4px var(--green)}50%{opacity:0.3;box-shadow:none}}
 
-/* CONTENT */
-.content{flex:1;overflow-y:auto;padding:var(--space-5)}
-.content::-webkit-scrollbar{width:4px}
-.content::-webkit-scrollbar-track{background:transparent}
-.content::-webkit-scrollbar-thumb{background:var(--color-border);border-radius:var(--radius-full)}
+/* ── TOPBAR ── */
+.topbar{
+  background:rgba(10,14,26,0.85);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(201,169,110,0.06);
+  padding:0 1.5rem;height:56px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;position:relative;z-index:10;
+}
+.topbar::after{
+  content:'';position:absolute;bottom:0;left:1.5rem;right:1.5rem;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(201,169,110,0.15),transparent);
+}
+.topbar-left{display:flex;align-items:center;gap:0.75rem}
+.page-title{
+  font-family:var(--font-display);font-size:var(--text-lg);
+  font-weight:400;letter-spacing:0.01em;color:var(--text-primary);
+}
+.page-badge{
+  font-size:0.6rem;padding:3px 8px;border-radius:3px;
+  background:var(--gold-dim);color:var(--gold);
+  font-weight:600;letter-spacing:0.1em;text-transform:uppercase;
+  font-family:var(--font-body);
+}
+.topbar-right{display:flex;align-items:center;gap:0.5rem}
+.icon-btn{
+  display:flex;align-items:center;justify-content:center;
+  width:34px;height:34px;border-radius:6px;
+  color:var(--text-secondary);transition:all var(--transition);
+}
+.icon-btn:hover{color:var(--gold);background:var(--gold-dim)}
+.add-btn{
+  display:flex;align-items:center;gap:0.5rem;
+  padding:0 1rem;height:34px;
+  background:linear-gradient(135deg,var(--gold),#b8944a);
+  color:var(--navy-deep);border-radius:6px;
+  font-size:var(--text-sm);font-weight:600;
+  transition:all var(--transition);
+  box-shadow:0 2px 8px rgba(201,169,110,0.2);
+}
+.add-btn:hover{
+  background:linear-gradient(135deg,var(--gold-bright),var(--gold));
+  box-shadow:0 4px 16px rgba(201,169,110,0.3);
+  transform:translateY(-1px);
+}
+.search-bar{
+  display:flex;align-items:center;gap:0.4rem;
+  padding:0 0.7rem;height:34px;
+  background:var(--navy-mid);border:1px solid rgba(201,169,110,0.08);
+  border-radius:6px;transition:all var(--transition);
+}
+.search-bar:focus-within{border-color:rgba(201,169,110,0.25);background:var(--navy-light)}
+.search-bar input{
+  background:none;border:none;outline:none;
+  font-size:var(--text-sm);color:var(--text-primary);width:150px;
+}
+.search-bar input::placeholder{color:var(--text-faint)}
+.search-bar i{color:var(--text-faint);width:14px;height:14px}
 
-/* KPI STRIP */
-.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--space-3);margin-bottom:var(--space-4)}
-.kpi-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-4);transition:all var(--transition)}
-.kpi-card:hover{border-color:var(--color-border);box-shadow:var(--shadow-sm)}
-.kpi-label{font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;font-weight:500}
-.kpi-value{font-size:var(--text-xl);font-weight:700;font-family:var(--font-mono);font-variant-numeric:tabular-nums;letter-spacing:-0.02em;line-height:1}
-.kpi-delta{font-size:var(--text-xs);margin-top:var(--space-2);display:flex;align-items:center;gap:3px}
-.delta-up{color:var(--color-success)}
-.delta-down{color:var(--color-error)}
-.delta-flat{color:var(--color-text-faint)}
+/* ── MAIN ── */
+.main{display:flex;flex-direction:column;overflow:hidden;position:relative}
+.main::before{
+  content:'';position:absolute;top:-200px;right:-200px;
+  width:500px;height:500px;border-radius:50%;
+  background:radial-gradient(circle,rgba(201,169,110,0.03),transparent 70%);
+  pointer-events:none;z-index:0;
+}
 
-/* GRID LAYOUT */
-.dash-grid{display:grid;grid-template-columns:1fr 340px;gap:var(--space-4)}
-.card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);overflow:hidden}
-.card-header{padding:var(--space-4) var(--space-5);border-bottom:1px solid var(--color-divider);display:flex;align-items:center;justify-content:space-between}
-.card-title{font-size:var(--text-sm);font-weight:600}
-.card-body{padding:var(--space-4) var(--space-5)}
-
-/* CHART */
-.chart-container{position:relative;height:200px;padding:var(--space-4) var(--space-5)}
-
-/* TABLE */
-.inv-table{width:100%}
-.inv-table thead th{font-size:var(--text-xs);color:var(--color-text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;padding:var(--space-2) var(--space-3);text-align:left;border-bottom:1px solid var(--color-divider);white-space:nowrap}
-.inv-table tbody tr{border-bottom:1px solid var(--color-divider);transition:background var(--transition)}
-.inv-table tbody tr:hover{background:var(--color-surface-offset)}
-.inv-table tbody tr:last-child{border-bottom:none}
-.inv-table td{padding:var(--space-3);font-size:var(--text-sm);white-space:nowrap}
-.watch-name{font-weight:600;color:var(--color-text)}
-.watch-ref{font-size:var(--text-xs);color:var(--color-text-muted);font-family:var(--font-mono)}
-.price-cell{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
-.market-cell{font-family:var(--font-mono);font-variant-numeric:tabular-nums;color:var(--color-teal)}
-.profit-pos{color:var(--color-success);font-family:var(--font-mono)}
-.profit-neg{color:var(--color-error);font-family:var(--font-mono)}
-.status-badge{display:inline-flex;align-items:center;gap:4px;padding:2px var(--space-2);border-radius:var(--radius-full);font-size:var(--text-xs);font-weight:500}
-.status-stock{background:var(--color-success-dim);color:var(--color-success)}
-.status-listed{background:var(--color-warning-dim);color:var(--color-warning)}
-.status-sold{background:var(--color-surface-dynamic);color:var(--color-text-muted)}
-.action-btns{display:flex;gap:var(--space-2)}
-.action-btn{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:var(--radius-sm);color:var(--color-text-muted);transition:all var(--transition);font-size:var(--text-xs)}
-.action-btn:hover{color:var(--color-text);background:var(--color-surface-dynamic)}
-.sell-btn{color:var(--color-success)!important}
-.sell-btn:hover{background:var(--color-success-dim)!important}
-.delete-btn{color:var(--color-error)!important}
-.delete-btn:hover{background:var(--color-error-dim)!important}
-
-/* DAYS BADGE */
-.days-badge{display:inline-block;padding:1px var(--space-2);border-radius:var(--radius-full);font-size:var(--text-xs);font-family:var(--font-mono)}
-.days-ok{background:var(--color-success-dim);color:var(--color-success)}
-.days-warn{background:var(--color-warning-dim);color:var(--color-warning)}
-.days-hot{background:var(--color-error-dim);color:var(--color-error)}
-
-/* AI COMMAND BAR */
-.ai-panel{display:flex;flex-direction:column;gap:0}
-.ai-messages{flex:1;overflow-y:auto;padding:var(--space-3) var(--space-4);display:flex;flex-direction:column;gap:var(--space-3);max-height:280px;min-height:200px}
-.ai-messages::-webkit-scrollbar{width:3px}
-.ai-messages::-webkit-scrollbar-thumb{background:var(--color-border)}
-.msg{display:flex;gap:var(--space-3);align-items:flex-start}
-.msg-avatar{width:24px;height:24px;border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px}
-.msg-user .msg-avatar{background:var(--color-primary);color:#fff}
-.msg-ai .msg-avatar{background:var(--color-surface-dynamic);color:var(--color-teal)}
-.msg-bubble{font-size:var(--text-sm);line-height:1.5;color:var(--color-text)}
-.msg-ai .msg-bubble{color:var(--color-text-muted)}
-.msg-time{font-size:10px;color:var(--color-text-faint);margin-top:2px}
-.ai-input-row{padding:var(--space-3) var(--space-4);border-top:1px solid var(--color-divider);display:flex;gap:var(--space-2);align-items:center}
-.ai-input{flex:1;background:var(--color-surface-offset);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-2) var(--space-3);font-size:var(--text-sm);color:var(--color-text);outline:none;transition:all var(--transition)}
-.ai-input::placeholder{color:var(--color-text-faint)}
-.ai-input:focus{border-color:var(--color-primary);background:var(--color-surface-2);box-shadow:0 0 0 3px var(--color-primary-highlight)}
-.send-btn{display:flex;align-items:center;justify-content:center;width:34px;height:34px;background:var(--color-primary);color:#fff;border-radius:var(--radius-md);transition:all var(--transition);flex-shrink:0}
-.send-btn:hover{background:var(--color-primary-hover)}
-.quick-chips{padding:0 var(--space-4) var(--space-2);display:flex;gap:var(--space-2);flex-wrap:wrap}
-.chip{padding:3px var(--space-3);border-radius:var(--radius-full);font-size:var(--text-xs);border:1px solid var(--color-border);color:var(--color-text-muted);cursor:pointer;transition:all var(--transition);background:none}
-.chip:hover{border-color:var(--color-primary);color:var(--color-primary);background:var(--color-primary-highlight)}
-
-/* MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity var(--transition);backdrop-filter:blur(4px)}
-.modal-overlay.open{opacity:1;pointer-events:all}
-.modal{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-xl);padding:var(--space-6);width:480px;max-width:95vw;transform:translateY(12px);transition:transform var(--transition);box-shadow:var(--shadow-lg)}
-.modal-overlay.open .modal{transform:translateY(0)}
-.modal-title{font-size:var(--text-lg);font-weight:700;margin-bottom:var(--space-5)}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)}
-.form-group{display:flex;flex-direction:column;gap:var(--space-1)}
-.form-group.full{grid-column:1/-1}
-.form-label{font-size:var(--text-xs);color:var(--color-text-muted);font-weight:500;text-transform:uppercase;letter-spacing:0.05em}
-.form-input{background:var(--color-surface-offset);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-2) var(--space-3);font-size:var(--text-sm);outline:none;transition:all var(--transition);color:var(--color-text)}
-.form-input:focus{border-color:var(--color-primary);background:var(--color-surface-2);box-shadow:0 0 0 3px var(--color-primary-highlight)}
-.modal-footer{display:flex;justify-content:flex-end;gap:var(--space-2);margin-top:var(--space-5)}
-.btn-ghost{padding:0 var(--space-4);height:36px;border-radius:var(--radius-md);font-size:var(--text-sm);color:var(--color-text-muted);transition:all var(--transition)}
-.btn-ghost:hover{background:var(--color-surface-offset);color:var(--color-text)}
-.btn-primary{padding:0 var(--space-4);height:36px;background:var(--color-primary);color:#fff;border-radius:var(--radius-md);font-size:var(--text-sm);font-weight:600;transition:all var(--transition)}
-.btn-primary:hover{background:var(--color-primary-hover)}
-.btn-danger{padding:0 var(--space-4);height:36px;background:var(--color-error);color:#fff;border-radius:var(--radius-md);font-size:var(--text-sm);font-weight:600;transition:all var(--transition)}
-.btn-danger:hover{background:#ef4444}
-
-/* FETCH ANIMATION */
-.fetch-row{display:flex;align-items:center;gap:var(--space-2);padding:var(--space-2) 0;font-size:var(--text-xs);color:var(--color-teal)}
-.fetch-spinner{width:12px;height:12px;border:2px solid var(--color-border);border-top-color:var(--color-teal);border-radius:50%;animation:spin 0.7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-/* VIEWS */
+/* ── VIEW SYSTEM ── */
 .view{display:none}
 .view.active{display:flex;flex-direction:column}
-.view-scroll{flex:1;overflow-y:auto;padding:var(--space-5)}
+.view-scroll{
+  flex:1;overflow-y:auto;padding:1.5rem;position:relative;z-index:1;
+}
 .view-scroll::-webkit-scrollbar{width:4px}
-.view-scroll::-webkit-scrollbar-thumb{background:var(--color-border);border-radius:var(--radius-full)}
+.view-scroll::-webkit-scrollbar-track{background:transparent}
+.view-scroll::-webkit-scrollbar-thumb{background:var(--navy-lighter);border-radius:4px}
 
-/* TOAST */
-.toast-container{position:fixed;bottom:var(--space-4);right:var(--space-4);display:flex;flex-direction:column;gap:var(--space-2);z-index:200}
-.toast{background:var(--color-surface-dynamic);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-3) var(--space-4);font-size:var(--text-sm);display:flex;align-items:center;gap:var(--space-2);box-shadow:var(--shadow-lg);animation:slideIn 0.2s ease-out;max-width:320px}
-@keyframes slideIn{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
-.toast-success{border-left:3px solid var(--color-success)}
+/* ── KPI CARDS ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:0.75rem;margin-bottom:1.25rem}
+.kpi-card{
+  background:var(--navy);border:1px solid rgba(201,169,110,0.06);
+  border-radius:8px;padding:1.1rem 1rem;
+  transition:all var(--transition);position:relative;overflow:hidden;
+  animation:kpiReveal 0.6s var(--ease) both;
+}
+.kpi-card:nth-child(1){animation-delay:0.05s}
+.kpi-card:nth-child(2){animation-delay:0.1s}
+.kpi-card:nth-child(3){animation-delay:0.15s}
+.kpi-card:nth-child(4){animation-delay:0.2s}
+.kpi-card:nth-child(5){animation-delay:0.25s}
+@keyframes kpiReveal{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.kpi-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(201,169,110,0.2),transparent);
+}
+.kpi-card:hover{border-color:rgba(201,169,110,0.15);transform:translateY(-2px)}
+.kpi-label{
+  font-size:var(--text-xs);color:var(--text-faint);
+  text-transform:uppercase;letter-spacing:0.1em;font-weight:500;
+  margin-bottom:0.5rem;
+}
+.kpi-value{
+  font-family:var(--font-display);font-size:var(--text-xl);
+  font-weight:300;letter-spacing:-0.01em;line-height:1;
+  color:var(--text-primary);
+}
+.kpi-delta{
+  font-size:var(--text-xs);margin-top:0.4rem;
+  font-family:var(--font-body);font-weight:400;
+  display:flex;align-items:center;gap:3px;
+}
+.delta-up{color:var(--green)}
+.delta-down{color:var(--red)}
 
-/* SOLD MODAL */
-.sold-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:150;opacity:0;pointer-events:none;transition:opacity var(--transition);backdrop-filter:blur(4px)}
-.sold-overlay.open{opacity:1;pointer-events:all}
-.sold-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-xl);padding:var(--space-6);width:360px;max-width:95vw;text-align:center;box-shadow:var(--shadow-lg)}
-.sold-icon{width:56px;height:56px;background:var(--color-success-dim);border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;margin:0 auto var(--space-4)}
-.sold-title{font-size:var(--text-lg);font-weight:700;margin-bottom:var(--space-2)}
-.sold-sub{font-size:var(--text-sm);color:var(--color-text-muted);margin-bottom:var(--space-5)}
-.sold-price-input{width:100%;margin-bottom:var(--space-4)}
+/* ── CARDS ── */
+.card{
+  background:var(--navy);
+  border:1px solid rgba(201,169,110,0.06);
+  border-radius:10px;overflow:hidden;
+  animation:cardReveal 0.5s var(--ease) 0.2s both;
+}
+@keyframes cardReveal{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.card-header{
+  padding:0.9rem 1.25rem;
+  border-bottom:1px solid rgba(201,169,110,0.06);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.card-title{
+  font-family:var(--font-display);font-size:var(--text-base);
+  font-weight:500;letter-spacing:0.01em;color:var(--gold-pale);
+}
+.card-body{padding:1rem 1.25rem}
 
-/* DELETE CONFIRM MODAL */
-.delete-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:150;opacity:0;pointer-events:none;transition:opacity var(--transition);backdrop-filter:blur(4px)}
-.delete-overlay.open{opacity:1;pointer-events:all}
-.delete-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-xl);padding:var(--space-6);width:360px;max-width:95vw;text-align:center;box-shadow:var(--shadow-lg)}
-.delete-icon{width:56px;height:56px;background:var(--color-error-dim);border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;margin:0 auto var(--space-4)}
-.delete-title{font-size:var(--text-lg);font-weight:700;margin-bottom:var(--space-2)}
-.delete-sub{font-size:var(--text-sm);color:var(--color-text-muted);margin-bottom:var(--space-5)}
+/* ── DASH GRID ── */
+.dash-grid{display:grid;grid-template-columns:1fr 340px;gap:1rem}
 
-/* PROFIT HIGHLIGHT */
-.profit-banner{background:linear-gradient(135deg,rgba(124,109,250,0.1),rgba(45,212,191,0.08));border:1px solid rgba(124,109,250,0.2);border-radius:var(--radius-lg);padding:var(--space-4) var(--space-5);display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-4)}
-.profit-banner-label{font-size:var(--text-xs);color:var(--color-text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:500}
-.profit-banner-value{font-size:var(--text-xl);font-weight:800;font-family:var(--font-mono);color:var(--color-primary)}
+/* ── CHART ── */
+.chart-container{position:relative;height:200px;padding:1rem 1.25rem}
 
-/* IMAGE UPLOAD */
-.upload-zone{border:2px dashed var(--color-border);border-radius:var(--radius-lg);padding:var(--space-8);text-align:center;cursor:pointer;transition:all var(--transition);background:var(--color-surface-offset)}
-.upload-zone:hover,.upload-zone.drag-over{border-color:var(--color-primary);background:var(--color-primary-highlight)}
-.upload-zone i{color:var(--color-text-faint);margin-bottom:var(--space-2)}
-.upload-text{font-size:var(--text-sm);color:var(--color-text-muted);margin-top:var(--space-2)}
-.upload-sub{font-size:var(--text-xs);color:var(--color-text-faint);margin-top:var(--space-1)}
-.upload-preview{max-width:100%;max-height:200px;border-radius:var(--radius-md);margin-top:var(--space-3);object-fit:contain}
-.identify-result{margin-top:var(--space-4);padding:var(--space-4);background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg)}
-.identify-header{display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-3)}
-.identify-brand{font-size:var(--text-lg);font-weight:700}
-.identify-confidence{font-size:var(--text-xs);padding:2px var(--space-2);border-radius:var(--radius-full);background:var(--color-success-dim);color:var(--color-success);font-weight:500}
-.identify-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-3);margin-top:var(--space-3)}
+/* ── TABLES ── */
+.inv-table{width:100%}
+.inv-table thead th{
+  font-size:0.68rem;color:var(--gold);opacity:0.5;
+  text-transform:uppercase;letter-spacing:0.1em;font-weight:600;
+  padding:0.6rem 0.75rem;text-align:left;
+  border-bottom:1px solid rgba(201,169,110,0.06);white-space:nowrap;
+  font-family:var(--font-body);
+}
+.inv-table tbody tr{
+  border-bottom:1px solid rgba(201,169,110,0.03);
+  transition:all var(--transition);
+}
+.inv-table tbody tr:hover{background:rgba(201,169,110,0.03)}
+.inv-table tbody tr:last-child{border-bottom:none}
+.inv-table td{padding:0.65rem 0.75rem;font-size:var(--text-sm);white-space:nowrap}
+.watch-name{
+  font-family:var(--font-display);font-weight:500;
+  font-size:var(--text-base);color:var(--text-primary);
+  letter-spacing:0.01em;
+}
+.watch-ref{font-size:var(--text-xs);color:var(--text-faint);font-family:var(--font-mono)}
+.price-cell{font-family:var(--font-mono);font-size:var(--text-sm);color:var(--cream-muted)}
+.market-cell{font-family:var(--font-mono);font-size:var(--text-sm);color:var(--gold)}
+.profit-pos{color:var(--green);font-family:var(--font-mono)}
+.profit-neg{color:var(--red);font-family:var(--font-mono)}
+.mono{font-family:var(--font-mono)}
 
-/* SEARCH BAR */
-.search-bar{display:flex;align-items:center;gap:var(--space-2);padding:0 var(--space-3);height:32px;background:var(--color-surface-offset);border:1px solid var(--color-border);border-radius:var(--radius-md);transition:all var(--transition)}
-.search-bar:focus-within{border-color:var(--color-primary);background:var(--color-surface-2);box-shadow:0 0 0 3px var(--color-primary-highlight)}
-.search-bar input{background:none;border:none;outline:none;font-size:var(--text-sm);color:var(--color-text);width:160px}
-.search-bar i{color:var(--color-text-faint);width:14px;height:14px}
+/* ── STATUS BADGES ── */
+.status-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 10px;border-radius:4px;
+  font-size:var(--text-xs);font-weight:500;
+  letter-spacing:0.03em;
+}
+.status-stock{background:var(--green-dim);color:var(--green)}
+.status-listed{background:var(--amber-dim);color:var(--amber)}
+.status-sold{background:rgba(255,255,255,0.04);color:var(--text-faint)}
+
+/* ── DAYS BADGE ── */
+.days-badge{
+  display:inline-block;padding:2px 8px;border-radius:4px;
+  font-size:var(--text-xs);font-family:var(--font-mono);
+}
+.days-ok{background:var(--green-dim);color:var(--green)}
+.days-warn{background:var(--amber-dim);color:var(--amber)}
+.days-hot{background:var(--red-dim);color:var(--red)}
+
+/* ── ACTION BUTTONS ── */
+.action-btns{display:flex;gap:0.35rem}
+.action-btn{
+  display:flex;align-items:center;justify-content:center;
+  width:28px;height:28px;border-radius:5px;
+  color:var(--text-faint);transition:all var(--transition);
+}
+.action-btn:hover{color:var(--text-primary);background:var(--navy-light)}
+.sell-btn{color:var(--green)!important}
+.sell-btn:hover{background:var(--green-dim)!important}
+.delete-btn{color:var(--red)!important}
+.delete-btn:hover{background:var(--red-dim)!important}
+
+/* ── AI PANEL ── */
+.ai-panel{display:flex;flex-direction:column}
+.ai-messages{
+  flex:1;overflow-y:auto;padding:0.75rem 1rem;
+  display:flex;flex-direction:column;gap:0.75rem;
+  max-height:280px;min-height:200px;
+}
+.ai-messages::-webkit-scrollbar{width:3px}
+.ai-messages::-webkit-scrollbar-thumb{background:var(--navy-lighter)}
+.msg{display:flex;gap:0.65rem;align-items:flex-start}
+.msg-avatar{
+  width:24px;height:24px;border-radius:5px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:700;flex-shrink:0;margin-top:2px;
+}
+.msg-user .msg-avatar{background:var(--gold-dim);color:var(--gold)}
+.msg-ai .msg-avatar{background:var(--navy-light);color:var(--green)}
+.msg-bubble{font-size:var(--text-sm);line-height:1.55;color:var(--text-primary)}
+.msg-ai .msg-bubble{color:var(--text-secondary)}
+.msg-time{font-size:9px;color:var(--text-faint);margin-top:2px;font-family:var(--font-mono)}
+.ai-input-row{
+  padding:0.65rem 1rem;border-top:1px solid rgba(201,169,110,0.06);
+  display:flex;gap:0.5rem;align-items:center;
+}
+.ai-input{
+  flex:1;background:var(--navy-mid);
+  border:1px solid rgba(201,169,110,0.08);border-radius:6px;
+  padding:0.45rem 0.7rem;font-size:var(--text-sm);
+  color:var(--text-primary);outline:none;transition:all var(--transition);
+}
+.ai-input::placeholder{color:var(--text-faint)}
+.ai-input:focus{border-color:rgba(201,169,110,0.25);background:var(--navy-light)}
+.send-btn{
+  display:flex;align-items:center;justify-content:center;
+  width:34px;height:34px;
+  background:linear-gradient(135deg,var(--gold),#b8944a);
+  color:var(--navy-deep);border-radius:6px;
+  transition:all var(--transition);flex-shrink:0;
+}
+.send-btn:hover{box-shadow:0 2px 10px rgba(201,169,110,0.3)}
+.quick-chips{padding:0 1rem 0.5rem;display:flex;gap:0.4rem;flex-wrap:wrap}
+.chip{
+  padding:3px 10px;border-radius:4px;font-size:var(--text-xs);
+  border:1px solid rgba(201,169,110,0.1);color:var(--text-faint);
+  cursor:pointer;transition:all var(--transition);background:none;
+}
+.chip:hover{border-color:var(--gold);color:var(--gold);background:var(--gold-dim)}
+
+/* ── MODALS ── */
+.modal-overlay,.sold-overlay,.delete-overlay{
+  position:fixed;inset:0;
+  background:rgba(6,9,17,0.85);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;
+  z-index:100;opacity:0;pointer-events:none;transition:opacity var(--transition);
+}
+.modal-overlay.open,.sold-overlay.open,.delete-overlay.open{opacity:1;pointer-events:all}
+.modal{
+  background:var(--navy);
+  border:1px solid rgba(201,169,110,0.1);border-radius:12px;
+  padding:1.75rem;width:480px;max-width:95vw;
+  transform:translateY(12px) scale(0.98);
+  transition:transform var(--transition);
+  box-shadow:0 24px 48px rgba(0,0,0,0.4),0 0 0 1px rgba(201,169,110,0.05);
+}
+.modal-overlay.open .modal,
+.sold-overlay.open .sold-card,
+.delete-overlay.open .delete-card{transform:translateY(0) scale(1)}
+.modal-title{
+  font-family:var(--font-display);font-size:var(--text-xl);
+  font-weight:400;margin-bottom:1.5rem;color:var(--gold-pale);
+}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem}
+.form-group{display:flex;flex-direction:column;gap:0.25rem}
+.form-group.full{grid-column:1/-1}
+.form-label{
+  font-size:0.65rem;color:var(--gold);opacity:0.5;font-weight:600;
+  text-transform:uppercase;letter-spacing:0.1em;
+}
+.form-input{
+  background:var(--navy-mid);border:1px solid rgba(201,169,110,0.08);
+  border-radius:6px;padding:0.5rem 0.7rem;font-size:var(--text-sm);
+  outline:none;transition:all var(--transition);color:var(--text-primary);
+}
+.form-input:focus{border-color:rgba(201,169,110,0.3);background:var(--navy-light)}
+.modal-footer{display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1.5rem}
+.btn-ghost{
+  padding:0 1rem;height:36px;border-radius:6px;
+  font-size:var(--text-sm);color:var(--text-secondary);
+  transition:all var(--transition);
+}
+.btn-ghost:hover{background:var(--navy-light);color:var(--text-primary)}
+.btn-primary{
+  padding:0 1rem;height:36px;
+  background:linear-gradient(135deg,var(--gold),#b8944a);
+  color:var(--navy-deep);border-radius:6px;
+  font-size:var(--text-sm);font-weight:600;transition:all var(--transition);
+}
+.btn-primary:hover{box-shadow:0 4px 16px rgba(201,169,110,0.25)}
+.btn-danger{
+  padding:0 1rem;height:36px;background:var(--red);
+  color:#fff;border-radius:6px;font-size:var(--text-sm);
+  font-weight:600;transition:all var(--transition);
+}
+.btn-danger:hover{box-shadow:0 4px 16px rgba(232,124,124,0.25)}
+
+/* ── SOLD/DELETE MODALS ── */
+.sold-card,.delete-card{
+  background:var(--navy);border:1px solid rgba(201,169,110,0.1);
+  border-radius:12px;padding:2rem;width:360px;max-width:95vw;
+  text-align:center;
+  box-shadow:0 24px 48px rgba(0,0,0,0.4);
+  transform:translateY(12px) scale(0.98);transition:transform var(--transition);
+}
+.sold-icon{
+  width:56px;height:56px;background:var(--green-dim);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;
+}
+.delete-icon{
+  width:56px;height:56px;background:var(--red-dim);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;
+}
+.sold-title,.delete-title{
+  font-family:var(--font-display);font-size:var(--text-lg);
+  font-weight:500;margin-bottom:0.4rem;color:var(--gold-pale);
+}
+.sold-sub,.delete-sub{
+  font-size:var(--text-sm);color:var(--text-secondary);margin-bottom:1.5rem;
+}
+.sold-price-input{width:100%;margin-bottom:1rem}
+
+/* ── PROFIT BANNER ── */
+.profit-banner{
+  background:linear-gradient(135deg,rgba(201,169,110,0.06),rgba(201,169,110,0.02));
+  border:1px solid rgba(201,169,110,0.1);border-radius:10px;
+  padding:1.25rem 1.5rem;
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:1rem;position:relative;overflow:hidden;
+}
+.profit-banner::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  opacity:0.2;
+}
+.profit-banner-label{
+  font-size:var(--text-xs);color:var(--text-faint);
+  text-transform:uppercase;letter-spacing:0.08em;font-weight:500;
+}
+.profit-banner-value{
+  font-family:var(--font-display);font-size:var(--text-xl);
+  font-weight:300;color:var(--gold);margin-top:0.25rem;
+}
+
+/* ── FETCH ANIMATION ── */
+.fetch-row{
+  display:flex;align-items:center;gap:0.5rem;
+  padding:0.5rem 0;font-size:var(--text-xs);color:var(--gold);
+}
+.fetch-spinner{
+  width:12px;height:12px;
+  border:2px solid var(--navy-lighter);border-top-color:var(--gold);
+  border-radius:50%;animation:spin 0.7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── UPLOAD ZONE ── */
+.upload-zone{
+  border:1px dashed rgba(201,169,110,0.2);border-radius:10px;
+  padding:2.5rem;text-align:center;cursor:pointer;
+  transition:all var(--transition);background:var(--navy-mid);
+}
+.upload-zone:hover,.upload-zone.drag-over{
+  border-color:var(--gold);background:var(--gold-dim);
+}
+.upload-zone i{color:var(--text-faint);margin-bottom:0.5rem}
+.upload-text{font-size:var(--text-sm);color:var(--text-secondary);margin-top:0.5rem}
+.upload-sub{font-size:var(--text-xs);color:var(--text-faint);margin-top:0.25rem}
+.upload-preview{max-width:100%;max-height:200px;border-radius:8px;margin-top:0.75rem;object-fit:contain}
+
+/* ── IDENTIFY RESULT ── */
+.identify-result{
+  margin-top:1rem;padding:1.25rem;background:var(--navy-mid);
+  border:1px solid rgba(201,169,110,0.08);border-radius:10px;
+}
+.identify-header{display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem}
+.identify-brand{font-family:var(--font-display);font-size:var(--text-lg);font-weight:500;color:var(--gold-pale)}
+.identify-confidence{
+  font-size:var(--text-xs);padding:3px 8px;border-radius:4px;
+  background:var(--green-dim);color:var(--green);font-weight:500;
+}
+.identify-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.65rem;margin-top:0.75rem}
+
+/* ── TOAST ── */
+.toast-container{
+  position:fixed;bottom:1rem;right:1rem;
+  display:flex;flex-direction:column;gap:0.5rem;z-index:200;
+}
+.toast{
+  background:var(--navy-mid);border:1px solid rgba(201,169,110,0.1);
+  border-radius:8px;padding:0.65rem 1rem;font-size:var(--text-sm);
+  display:flex;align-items:center;gap:0.5rem;
+  box-shadow:0 8px 24px rgba(0,0,0,0.4);
+  animation:toastIn 0.3s var(--ease);max-width:320px;
+  border-left:2px solid var(--gold);
+}
+@keyframes toastIn{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ── STAGGER ANIMATIONS ── */
+.view.active .dash-grid{animation:cardReveal 0.5s var(--ease) 0.15s both}
 </style>
 </head>
 <body>
@@ -251,19 +553,21 @@ table{border-collapse:collapse;width:100%}
 <div class="app">
 <!-- SIDEBAR -->
 <aside class="sidebar">
-  <div class="sidebar-logo">
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="WristDesk logo">
-      <circle cx="14" cy="14" r="10" stroke="currentColor" stroke-width="2"/>
-      <circle cx="14" cy="14" r="6" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
-      <line x1="14" y1="14" x2="14" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      <line x1="14" y1="14" x2="18" y2="14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      <circle cx="14" cy="14" r="1.5" fill="currentColor"/>
-      <rect x="11" y="1" width="6" height="4" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
-      <rect x="11" y="23" width="6" height="4" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
-    </svg>
+  <div class="sidebar-brand">
+    <div class="brand-mark">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="11" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="16" cy="16" r="7" stroke="currentColor" stroke-width="1" opacity="0.3"/>
+        <line x1="16" y1="16" x2="16" y2="10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="16" y1="16" x2="20.5" y2="16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="16" cy="16" r="1.2" fill="currentColor"/>
+        <rect x="13.5" y="1.5" width="5" height="3" rx="1.2" stroke="currentColor" stroke-width="1"/>
+        <rect x="13.5" y="27.5" width="5" height="3" rx="1.2" stroke="currentColor" stroke-width="1"/>
+      </svg>
+    </div>
     <div>
-      <div class="logo-text">WristDesk Pro</div>
-      <div class="logo-sub">Watch Analytics</div>
+      <div class="brand-name">WristDesk</div>
+      <div class="brand-sub">Horlogerie</div>
     </div>
   </div>
   <nav class="sidebar-nav">
@@ -289,20 +593,16 @@ table{border-collapse:collapse;width:100%}
     </button>
   </nav>
   <div class="sidebar-footer">
-    <div class="live-badge"><div class="status-dot"></div> Chrono24 Live</div>
-    <button class="nav-item" onclick="toggleTheme()">
-      <i data-lucide="sun-moon"></i> Toggle Theme
-    </button>
+    <div class="live-indicator"><div class="live-dot"></div> Chrono24 Connected</div>
   </div>
 </aside>
 
 <!-- MAIN -->
 <div class="main">
-  <!-- TOPBAR -->
   <header class="topbar">
     <div class="topbar-left">
       <span class="page-title" id="page-title">Dashboard</span>
-      <span class="page-badge" id="page-badge">Live</span>
+      <span class="page-badge" id="page-badge">LIVE</span>
     </div>
     <div class="topbar-right">
       <div class="search-bar">
@@ -315,95 +615,72 @@ table{border-collapse:collapse;width:100%}
     </div>
   </header>
 
-  <!-- DASHBOARD VIEW -->
+  <!-- DASHBOARD -->
   <div class="view active" id="view-dashboard">
     <div class="view-scroll">
       <div class="kpi-grid" id="kpi-grid"></div>
       <div class="dash-grid">
         <div>
-          <div class="card" style="margin-bottom:var(--space-4)">
+          <div class="card" style="margin-bottom:1rem">
             <div class="card-header">
               <span class="card-title">Inventory Overview</span>
-              <span style="font-size:var(--text-xs);color:var(--color-text-muted)">Buy vs Market Value</span>
+              <span style="font-size:var(--text-xs);color:var(--text-faint)">Buy vs Market Value</span>
             </div>
             <div class="chart-container"><canvas id="profitChart"></canvas></div>
           </div>
           <div class="card">
             <div class="card-header">
-              <span class="card-title">Recent Inventory</span>
-              <span style="font-size:var(--text-xs);color:var(--color-text-muted)" id="inv-count-label"></span>
+              <span class="card-title">Active Inventory</span>
+              <span style="font-size:var(--text-xs);color:var(--text-faint)" id="inv-count-label"></span>
             </div>
             <div style="overflow-x:auto">
               <table class="inv-table">
-                <thead>
-                  <tr><th>Watch</th><th>Bought</th><th>C24 Value</th><th>P&L</th><th>Days</th><th>Status</th><th></th></tr>
-                </thead>
+                <thead><tr><th>Watch</th><th>Bought</th><th>C24 Value</th><th>P&L</th><th>Days</th><th>Status</th><th></th></tr></thead>
                 <tbody id="dash-table-body"></tbody>
               </table>
             </div>
           </div>
         </div>
-        <!-- AI Panel -->
         <div class="card ai-panel" style="height:fit-content;position:sticky;top:0">
           <div class="card-header">
             <span class="card-title">AI Assistant</span>
-            <span style="font-size:var(--text-xs);color:var(--color-teal);display:flex;align-items:center;gap:4px;"><div class="status-dot"></div>Ready</span>
+            <span style="font-size:var(--text-xs);color:var(--green);display:flex;align-items:center;gap:4px;"><div class="live-dot"></div>Ready</span>
           </div>
           <div class="ai-messages" id="ai-messages-dash"></div>
-          <div class="quick-chips" id="quick-chips-dash">
+          <div class="quick-chips">
             <button class="chip" onclick="sendAI('How many watches in stock?','dash')">In stock?</button>
-            <button class="chip" onclick="sendAI('What is my total profit this month?','dash')">Profit?</button>
-            <button class="chip" onclick="sendAI('Which watch has been sitting longest?','dash')">Slowest mover?</button>
+            <button class="chip" onclick="sendAI('What is my total profit?','dash')">Profit?</button>
+            <button class="chip" onclick="sendAI('Which watch has been sitting longest?','dash')">Slowest?</button>
             <button class="chip" onclick="sendAI('Show my best margin watch','dash')">Best margin?</button>
           </div>
           <div class="ai-input-row">
-            <input class="ai-input" id="ai-input-dash" placeholder="Ask anything or say 'Datejust sold for $7,400'..." onkeydown="if(event.key==='Enter')sendAI(this.value,'dash')">
-            <button class="send-btn" onclick="sendAI(document.getElementById('ai-input-dash').value,'dash')">
-              <i data-lucide="send" style="width:14px;height:14px;"></i>
-            </button>
+            <input class="ai-input" id="ai-input-dash" placeholder="'Datejust sold for $7,400'..." onkeydown="if(event.key==='Enter')sendAI(this.value,'dash')">
+            <button class="send-btn" onclick="sendAI(document.getElementById('ai-input-dash').value,'dash')"><i data-lucide="send" style="width:14px;height:14px;"></i></button>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- INVENTORY VIEW -->
+  <!-- INVENTORY -->
   <div class="view" id="view-inventory">
     <div class="view-scroll">
       <div class="profit-banner">
-        <div>
-          <div class="profit-banner-label">Total Inventory Value (Chrono24)</div>
-          <div class="profit-banner-value" id="total-inv-value">-</div>
-        </div>
-        <div style="text-align:right">
-          <div class="profit-banner-label">Cost Basis</div>
-          <div class="profit-banner-value" style="color:var(--color-text-muted)" id="total-cost-basis">-</div>
-        </div>
-        <div style="text-align:right">
-          <div class="profit-banner-label">Unrealized Gain</div>
-          <div class="profit-banner-value" id="unrealized-gain">-</div>
-        </div>
+        <div><div class="profit-banner-label">Total Inventory Value</div><div class="profit-banner-value" id="total-inv-value">-</div></div>
+        <div style="text-align:right"><div class="profit-banner-label">Cost Basis</div><div class="profit-banner-value" style="color:var(--text-secondary)" id="total-cost-basis">-</div></div>
+        <div style="text-align:right"><div class="profit-banner-label">Unrealized Gain</div><div class="profit-banner-value" id="unrealized-gain">-</div></div>
       </div>
       <div class="card">
         <div class="card-header">
           <span class="card-title">All Inventory</span>
-          <div style="display:flex;gap:var(--space-2)">
-            <select class="form-input" id="filter-status" onchange="renderAll()" style="font-size:var(--text-xs);padding:2px var(--space-3)">
-              <option value="all">All Status</option>
-              <option value="In Stock">In Stock</option>
-              <option value="Listed">Listed</option>
-              <option value="Sold">Sold</option>
-            </select>
-            <select class="form-input" id="filter-brand" onchange="renderAll()" style="font-size:var(--text-xs);padding:2px var(--space-3)">
-              <option value="all">All Brands</option>
-            </select>
+          <div style="display:flex;gap:0.4rem">
+            <select class="form-input" id="filter-status" onchange="renderAll()" style="font-size:var(--text-xs);padding:3px 0.6rem"><option value="all">All Status</option><option value="In Stock">In Stock</option><option value="Listed">Listed</option><option value="Sold">Sold</option></select>
+            <select class="form-input" id="filter-brand" onchange="renderAll()" style="font-size:var(--text-xs);padding:3px 0.6rem"><option value="all">All Brands</option></select>
           </div>
         </div>
         <div style="overflow-x:auto">
           <table class="inv-table">
-            <thead>
-              <tr><th>Watch</th><th>Reference</th><th>Condition</th><th>Bought</th><th>C24 Value</th><th>P&L</th><th>Days</th><th>Status</th><th></th></tr>
-            </thead>
+            <thead><tr><th>Watch</th><th>Reference</th><th>Condition</th><th>Bought</th><th>C24 Value</th><th>P&L</th><th>Days</th><th>Status</th><th></th></tr></thead>
             <tbody id="full-table-body"></tbody>
           </table>
         </div>
@@ -411,7 +688,7 @@ table{border-collapse:collapse;width:100%}
     </div>
   </div>
 
-  <!-- SOLD VIEW -->
+  <!-- SOLD -->
   <div class="view" id="view-sold">
     <div class="view-scroll">
       <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)" id="sold-kpis"></div>
@@ -419,9 +696,7 @@ table{border-collapse:collapse;width:100%}
         <div class="card-header"><span class="card-title">Sold Watches</span></div>
         <div style="overflow-x:auto">
           <table class="inv-table">
-            <thead>
-              <tr><th>Watch</th><th>Reference</th><th>Bought At</th><th>Sold At</th><th>Realized P&L</th><th>Hold Days</th><th>Margin</th></tr>
-            </thead>
+            <thead><tr><th>Watch</th><th>Reference</th><th>Bought At</th><th>Sold At</th><th>Realized P&L</th><th>Hold Days</th><th>Margin</th></tr></thead>
             <tbody id="sold-table-body"></tbody>
           </table>
         </div>
@@ -429,48 +704,35 @@ table{border-collapse:collapse;width:100%}
     </div>
   </div>
 
-  <!-- PRICE LOOKUP VIEW -->
+  <!-- PRICE LOOKUP -->
   <div class="view" id="view-lookup">
     <div class="view-scroll">
-      <div class="card" style="max-width:600px;margin:0 auto">
+      <div class="card" style="max-width:560px;margin:0 auto">
         <div class="card-header"><span class="card-title">Chrono24 Price Lookup</span></div>
         <div class="card-body">
-          <div class="form-group" style="margin-bottom:var(--space-3)">
-            <label class="form-label">Brand</label>
-            <input class="form-input" id="lookup-brand" placeholder="e.g. Rolex, Patek Philippe, AP...">
-          </div>
-          <div class="form-group" style="margin-bottom:var(--space-3)">
-            <label class="form-label">Model / Reference</label>
-            <input class="form-input" id="lookup-model" placeholder="e.g. Submariner 124060, Nautilus 5711...">
-          </div>
-          <div class="form-group" style="margin-bottom:var(--space-4)">
-            <label class="form-label">Condition</label>
-            <select class="form-input" id="lookup-condition">
-              <option>Unworn</option><option>Like New</option><option selected>Good</option><option>Fair</option>
-            </select>
-          </div>
-          <button class="btn-primary" style="width:100%" onclick="runLookup()">
-            <span id="lookup-btn-text">Fetch Chrono24 Price</span>
-          </button>
-          <div id="lookup-result" style="margin-top:var(--space-4)"></div>
+          <div class="form-group" style="margin-bottom:0.75rem"><label class="form-label">Brand</label><input class="form-input" id="lookup-brand" placeholder="e.g. Rolex, Patek Philippe..."></div>
+          <div class="form-group" style="margin-bottom:0.75rem"><label class="form-label">Model / Reference</label><input class="form-input" id="lookup-model" placeholder="e.g. Submariner 124060..."></div>
+          <div class="form-group" style="margin-bottom:1rem"><label class="form-label">Condition</label><select class="form-input" id="lookup-condition"><option>Unworn</option><option>Like New</option><option selected>Good</option><option>Fair</option></select></div>
+          <button class="btn-primary" style="width:100%" onclick="runLookup()"><span id="lookup-btn-text">Fetch Chrono24 Price</span></button>
+          <div id="lookup-result" style="margin-top:1rem"></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- IDENTIFY WATCH VIEW -->
+  <!-- IDENTIFY -->
   <div class="view" id="view-identify">
     <div class="view-scroll">
-      <div class="card" style="max-width:600px;margin:0 auto">
+      <div class="card" style="max-width:560px;margin:0 auto">
         <div class="card-header">
-          <span class="card-title">Watch Identifier & Valuator</span>
-          <span style="font-size:var(--text-xs);color:var(--color-teal)">Upload a photo</span>
+          <span class="card-title">Watch Identifier</span>
+          <span style="font-size:var(--text-xs);color:var(--gold)">Upload a photo</span>
         </div>
         <div class="card-body">
           <div class="upload-zone" id="upload-zone" onclick="document.getElementById('watch-upload').click()">
-            <i data-lucide="upload-cloud" style="width:40px;height:40px;"></i>
+            <i data-lucide="upload-cloud" style="width:36px;height:36px;"></i>
             <div class="upload-text">Drop a watch photo here or click to upload</div>
-            <div class="upload-sub">Supports JPG, PNG, HEIC - Max 10MB</div>
+            <div class="upload-sub">JPG, PNG, HEIC - Max 10MB</div>
             <input type="file" id="watch-upload" accept="image/*" hidden onchange="handleUpload(this)">
           </div>
           <div id="upload-preview-area"></div>
@@ -480,16 +742,16 @@ table{border-collapse:collapse;width:100%}
     </div>
   </div>
 
-  <!-- AI VIEW -->
+  <!-- AI FULL VIEW -->
   <div class="view" id="view-ai">
-    <div style="flex:1;display:flex;flex-direction:column;max-width:700px;width:100%;margin:0 auto;padding:var(--space-4);">
+    <div style="flex:1;display:flex;flex-direction:column;max-width:680px;width:100%;margin:0 auto;padding:1rem;">
       <div class="card" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
         <div class="card-header">
-          <span class="card-title">AI Assistant - Full View</span>
-          <span style="font-size:var(--text-xs);color:var(--color-teal)">Natural Language Commands</span>
+          <span class="card-title">AI Assistant</span>
+          <span style="font-size:var(--text-xs);color:var(--gold)">Natural Language</span>
         </div>
         <div class="ai-messages" id="ai-messages-full" style="flex:1;max-height:none;min-height:0;"></div>
-        <div class="quick-chips" id="quick-chips-full">
+        <div class="quick-chips">
           <button class="chip" onclick="sendAI('Mark the AP Royal Oak as sold for $32,000','full')">Mark sold</button>
           <button class="chip" onclick="sendAI('What watches have been in stock over 30 days?','full')">Slow movers</button>
           <button class="chip" onclick="sendAI('What is my total realized profit?','full')">Total profit</button>
@@ -498,10 +760,8 @@ table{border-collapse:collapse;width:100%}
           <button class="chip" onclick="sendAI('What is my average margin?','full')">Avg margin</button>
         </div>
         <div class="ai-input-row">
-          <input class="ai-input" id="ai-input-full" placeholder="Type a command... 'Mark the Daytona sold for $18,500'" onkeydown="if(event.key==='Enter')sendAI(this.value,'full')">
-          <button class="send-btn" onclick="sendAI(document.getElementById('ai-input-full').value,'full')">
-            <i data-lucide="send" style="width:14px;height:14px;"></i>
-          </button>
+          <input class="ai-input" id="ai-input-full" placeholder="'Mark the Daytona sold for $18,500'..." onkeydown="if(event.key==='Enter')sendAI(this.value,'full')">
+          <button class="send-btn" onclick="sendAI(document.getElementById('ai-input-full').value,'full')"><i data-lucide="send" style="width:14px;height:14px;"></i></button>
         </div>
       </div>
     </div>
@@ -512,44 +772,16 @@ table{border-collapse:collapse;width:100%}
 <!-- ADD WATCH MODAL -->
 <div class="modal-overlay" id="add-modal" onclick="if(event.target===this)closeModal()">
   <div class="modal">
-    <div class="modal-title">Add Watch to Inventory</div>
+    <div class="modal-title">Add to Collection</div>
     <div class="form-grid">
-      <div class="form-group">
-        <label class="form-label">Brand *</label>
-        <input class="form-input" id="f-brand" placeholder="Rolex">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Model *</label>
-        <input class="form-input" id="f-model" placeholder="Submariner">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Reference No.</label>
-        <input class="form-input" id="f-ref" placeholder="124060">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Year</label>
-        <input class="form-input" id="f-year" placeholder="2022">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Condition</label>
-        <select class="form-input" id="f-condition">
-          <option>Unworn</option><option>Like New</option><option selected>Good</option><option>Fair</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Buy Price ($) *</label>
-        <input class="form-input" id="f-price" type="number" placeholder="12500">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Buy Date</label>
-        <input class="form-input" id="f-date" type="date">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Channel</label>
-        <select class="form-input" id="f-channel">
-          <option>Private</option><option>Chrono24</option><option>eBay</option><option>Dealer</option><option>Auction</option>
-        </select>
-      </div>
+      <div class="form-group"><label class="form-label">Brand *</label><input class="form-input" id="f-brand" placeholder="Rolex"></div>
+      <div class="form-group"><label class="form-label">Model *</label><input class="form-input" id="f-model" placeholder="Submariner"></div>
+      <div class="form-group"><label class="form-label">Reference</label><input class="form-input" id="f-ref" placeholder="124060"></div>
+      <div class="form-group"><label class="form-label">Year</label><input class="form-input" id="f-year" placeholder="2022"></div>
+      <div class="form-group"><label class="form-label">Condition</label><select class="form-input" id="f-condition"><option>Unworn</option><option>Like New</option><option selected>Good</option><option>Fair</option></select></div>
+      <div class="form-group"><label class="form-label">Buy Price ($) *</label><input class="form-input" id="f-price" type="number" placeholder="12500"></div>
+      <div class="form-group"><label class="form-label">Buy Date</label><input class="form-input" id="f-date" type="date"></div>
+      <div class="form-group"><label class="form-label">Channel</label><select class="form-input" id="f-channel"><option>Private</option><option>Chrono24</option><option>eBay</option><option>Dealer</option><option>Auction</option></select></div>
       <div class="form-group full" id="fetch-status"></div>
     </div>
     <div class="modal-footer">
@@ -559,13 +791,13 @@ table{border-collapse:collapse;width:100%}
   </div>
 </div>
 
-<!-- MARK SOLD MODAL -->
+<!-- SOLD MODAL -->
 <div class="sold-overlay" id="sold-modal">
   <div class="sold-card">
-    <div class="sold-icon"><i data-lucide="check" style="width:28px;height:28px;color:var(--color-success)"></i></div>
+    <div class="sold-icon"><i data-lucide="check" style="width:28px;height:28px;color:var(--green)"></i></div>
     <div class="sold-title" id="sold-watch-name">Mark as Sold</div>
     <div class="sold-sub">Enter the final sale price</div>
-    <input class="form-input sold-price-input" id="sold-price-input" type="number" placeholder="Enter sale price...">
+    <input class="form-input sold-price-input" id="sold-price-input" type="number" placeholder="Sale price...">
     <div class="modal-footer" style="justify-content:center">
       <button class="btn-ghost" onclick="closeSoldModal()">Cancel</button>
       <button class="btn-primary" onclick="confirmSold()">Confirm Sale</button>
@@ -573,96 +805,65 @@ table{border-collapse:collapse;width:100%}
   </div>
 </div>
 
-<!-- DELETE CONFIRM MODAL -->
+<!-- DELETE MODAL -->
 <div class="delete-overlay" id="delete-modal">
   <div class="delete-card">
-    <div class="delete-icon"><i data-lucide="trash-2" style="width:28px;height:28px;color:var(--color-error)"></i></div>
+    <div class="delete-icon"><i data-lucide="trash-2" style="width:28px;height:28px;color:var(--red)"></i></div>
     <div class="delete-title" id="delete-watch-name">Delete Watch</div>
-    <div class="delete-sub">This action cannot be undone. Remove this watch from your inventory?</div>
+    <div class="delete-sub">This action cannot be undone.</div>
     <div class="modal-footer" style="justify-content:center">
       <button class="btn-ghost" onclick="closeDeleteModal()">Cancel</button>
-      <button class="btn-danger" onclick="confirmDelete()">Delete Watch</button>
+      <button class="btn-danger" onclick="confirmDelete()">Delete</button>
     </div>
   </div>
 </div>
 
-<!-- TOAST -->
 <div class="toast-container" id="toast-container"></div>
 
 <script>
-// ── WATCH DATABASE (Chrono24 realistic pricing) ──
-const WATCH_DB = {
-  'Rolex Submariner 124060':       {low:12800,fair:13800,high:14600},
-  'Rolex Submariner 126610LN':     {low:14200,fair:15400,high:16400},
-  'Rolex Daytona 116500LN':        {low:26000,fair:29500,high:33000},
-  'Rolex Datejust 126334':         {low:10200,fair:11200,high:12400},
+// ══════════════════════════════════════════════════════
+// DATA ENGINE
+// ══════════════════════════════════════════════════════
+const WATCH_DB={
+  'Rolex Submariner 124060':{low:12800,fair:13800,high:14600},
+  'Rolex Submariner 126610LN':{low:14200,fair:15400,high:16400},
+  'Rolex Daytona 116500LN':{low:26000,fair:29500,high:33000},
+  'Rolex Datejust 126334':{low:10200,fair:11200,high:12400},
   'Rolex GMT-Master II 126710BLNR':{low:16800,fair:18200,high:19800},
-  'Rolex Explorer 124270':         {low:8400,fair:9200,high:10000},
+  'Rolex Explorer 124270':{low:8400,fair:9200,high:10000},
   'Patek Philippe Nautilus 5711/1A':{low:110000,fair:125000,high:140000},
-  'Patek Philippe Aquanaut 5167A': {low:42000,fair:48000,high:55000},
+  'Patek Philippe Aquanaut 5167A':{low:42000,fair:48000,high:55000},
   'Patek Philippe Calatrava 5296R':{low:28000,fair:32000,high:36000},
   'Audemars Piguet Royal Oak 15500ST':{low:28000,fair:32000,high:36000},
   'Audemars Piguet Royal Oak 15202ST':{low:55000,fair:65000,high:75000},
-  'Omega Speedmaster 310.30.42':   {low:5400,fair:6100,high:6800},
-  'Omega Seamaster 210.30.42':     {low:4200,fair:4800,high:5400},
-  'IWC Portugieser IW500710':      {low:7000,fair:7800,high:8600},
-  'Cartier Santos WSSA0018':       {low:6800,fair:7600,high:8200},
-  'Breitling Navitimer AB0120':    {low:5200,fair:5800,high:6400},
-  'Richard Mille RM 011':          {low:165000,fair:185000,high:210000},
-  'Tag Heuer Carrera CBN2A1B':     {low:3800,fair:4400,high:5000},
+  'Omega Speedmaster 310.30.42':{low:5400,fair:6100,high:6800},
+  'Omega Seamaster 210.30.42':{low:4200,fair:4800,high:5400},
+  'IWC Portugieser IW500710':{low:7000,fair:7800,high:8600},
+  'Cartier Santos WSSA0018':{low:6800,fair:7600,high:8200},
+  'Breitling Navitimer AB0120':{low:5200,fair:5800,high:6400},
+  'Richard Mille RM 011':{low:165000,fair:185000,high:210000},
+  'Tag Heuer Carrera CBN2A1B':{low:3800,fair:4400,high:5000},
 };
+const CHRONO_MULT={'Rolex':{base:1.18,v:0.06},'Patek Philippe':{base:1.25,v:0.08},'Audemars Piguet':{base:1.15,v:0.07},'Richard Mille':{base:1.3,v:0.1},'Omega':{base:1.05,v:0.04},'IWC':{base:1.03,v:0.03},'Breitling':{base:1.02,v:0.03},'Tag Heuer':{base:0.98,v:0.04},'Cartier':{base:1.08,v:0.05},'default':{base:1.04,v:0.05}};
+const COND_MULT={'Unworn':1.12,'Like New':1.06,'Good':1.0,'Fair':0.9};
 
-const CHRONO_MULTIPLIERS = {
-  'Rolex':{base:1.18,variance:0.06},'Patek Philippe':{base:1.25,variance:0.08},
-  'Audemars Piguet':{base:1.15,variance:0.07},'Richard Mille':{base:1.3,variance:0.1},
-  'Omega':{base:1.05,variance:0.04},'IWC':{base:1.03,variance:0.03},
-  'Breitling':{base:1.02,variance:0.03},'Tag Heuer':{base:0.98,variance:0.04},
-  'Cartier':{base:1.08,variance:0.05},'default':{base:1.04,variance:0.05}
-};
-const COND_MULT = {'Unworn':1.12,'Like New':1.06,'Good':1.0,'Fair':0.9};
-
-function c24Price(brand,price,condition){
-  const key = Object.keys(WATCH_DB).find(k => k.toLowerCase().includes(brand.toLowerCase()));
-  if(key){
-    const db = WATCH_DB[key];
-    const condMult = COND_MULT[condition]||1;
-    return Math.round((db.fair * condMult)/100)*100;
-  }
-  const m = CHRONO_MULTIPLIERS[brand]||CHRONO_MULTIPLIERS['default'];
-  const v = (Math.random()-0.5)*2*m.variance;
-  return Math.round(price*(m.base+v)*(COND_MULT[condition]||1)/100)*100;
+function c24Price(brand,price,cond){
+  const key=Object.keys(WATCH_DB).find(k=>k.toLowerCase().includes(brand.toLowerCase()));
+  if(key){return Math.round((WATCH_DB[key].fair*(COND_MULT[cond]||1))/100)*100;}
+  const m=CHRONO_MULT[brand]||CHRONO_MULT['default'];
+  return Math.round(price*(m.base+(Math.random()-0.5)*2*m.v)*(COND_MULT[cond]||1)/100)*100;
 }
-
-function lookupC24(brand,model,condition){
-  const searchKey = `${brand} ${model}`.toLowerCase();
-  const match = Object.keys(WATCH_DB).find(k => {
-    const kl = k.toLowerCase();
-    return searchKey.split(' ').filter(w=>w.length>2).every(w=>kl.includes(w));
-  });
-  if(match){
-    const db = WATCH_DB[match];
-    const cm = COND_MULT[condition]||1;
-    return {
-      low: Math.round(db.low*cm/100)*100,
-      fair: Math.round(db.fair*cm/100)*100,
-      high: Math.round(db.high*cm/100)*100,
-      comps: Math.floor(Math.random()*30)+15,
-      matched: match
-    };
-  }
-  const base = Math.round((Math.random()*50000+5000)/100)*100;
-  return {
-    low: Math.round(base*0.9/100)*100,
-    fair: base,
-    high: Math.round(base*1.12/100)*100,
-    comps: Math.floor(Math.random()*40)+12,
-    matched: `${brand} ${model}`
-  };
+function lookupC24(brand,model,cond){
+  const sk=`${brand} ${model}`.toLowerCase();
+  const match=Object.keys(WATCH_DB).find(k=>sk.split(' ').filter(w=>w.length>2).every(w=>k.toLowerCase().includes(w)));
+  if(match){const d=WATCH_DB[match],cm=COND_MULT[cond]||1;return{low:Math.round(d.low*cm/100)*100,fair:Math.round(d.fair*cm/100)*100,high:Math.round(d.high*cm/100)*100,comps:Math.floor(Math.random()*30)+15,matched:match};}
+  const base=Math.round((Math.random()*50000+5000)/100)*100;
+  return{low:Math.round(base*0.9/100)*100,fair:base,high:Math.round(base*1.12/100)*100,comps:Math.floor(Math.random()*40)+12,matched:`${brand} ${model}`};
 }
 
 // ── PERSISTENCE ──
-const STORAGE_KEY = 'wristdesk_pro_inventory';
-const DEFAULT_INVENTORY = [
+const STORAGE_KEY='wristdesk_pro_inventory';
+const DEFAULT_INV=[
   {id:1,brand:'Rolex',model:'Submariner',ref:'124060',year:'2023',condition:'Like New',buyPrice:12500,buyDate:'2026-02-15',channel:'Private',market:14800,status:'In Stock',soldPrice:null,soldDate:null},
   {id:2,brand:'Patek Philippe',model:'Nautilus',ref:'5711/1A',year:'2020',condition:'Good',buyPrice:95000,buyDate:'2026-01-20',channel:'Dealer',market:125000,status:'Listed',soldPrice:null,soldDate:null},
   {id:3,brand:'Audemars Piguet',model:'Royal Oak',ref:'15500ST',year:'2022',condition:'Good',buyPrice:28000,buyDate:'2026-03-01',channel:'Chrono24',market:32000,status:'In Stock',soldPrice:null,soldDate:null},
@@ -671,562 +872,227 @@ const DEFAULT_INVENTORY = [
   {id:6,brand:'IWC',model:'Portugieser',ref:'IW500710',year:'2020',condition:'Like New',buyPrice:7200,buyDate:'2026-02-28',channel:'Private',market:8300,status:'In Stock',soldPrice:null,soldDate:null},
   {id:7,brand:'Rolex',model:'Datejust',ref:'126334',year:'2021',condition:'Good',buyPrice:9500,buyDate:'2026-01-05',channel:'Private',market:11200,status:'Sold',soldPrice:11200,soldDate:'2026-02-20'},
 ];
+function loadInv(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}return JSON.parse(JSON.stringify(DEFAULT_INV));}
+function saveInv(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(inventory));}catch(e){}}
 
-function loadInventory(){
-  try{
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if(saved) return JSON.parse(saved);
-  }catch(e){}
-  return JSON.parse(JSON.stringify(DEFAULT_INVENTORY));
-}
-function saveInventory(){
-  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory)); }catch(e){}
-}
+let inventory=loadInv();
+let nextId=Math.max(...inventory.map(w=>w.id),0)+1;
+let soldTarget=null,deleteTarget=null,profitChart=null,searchQuery='';
 
-let inventory = loadInventory();
-let nextId = Math.max(...inventory.map(w=>w.id),0)+1;
-let soldTarget = null;
-let deleteTarget = null;
-let profitChart = null;
-let searchQuery = '';
-
-function daysSince(dateStr){
-  return Math.max(0,Math.floor((Date.now()-new Date(dateStr))/(1000*60*60*24)));
-}
-function fmt(n){return '$'+Math.abs(n).toLocaleString()}
+function daysSince(d){return Math.max(0,Math.floor((Date.now()-new Date(d))/(864e5)))}
+function fmt(n){return'$'+Math.abs(n).toLocaleString()}
 function pct(p,b){return b?((p-b)/b*100).toFixed(1)+'%':'0%'}
 
 // ── KPIs ──
 function calcKPIs(){
-  const active=inventory.filter(w=>w.status!=='Sold');
-  const sold=inventory.filter(w=>w.status==='Sold');
-  const totalCost=active.reduce((s,w)=>s+w.buyPrice,0);
-  const totalMarket=active.reduce((s,w)=>s+w.market,0);
-  const unrealized=totalMarket-totalCost;
-  const realized=sold.reduce((s,w)=>s+(w.soldPrice-w.buyPrice),0);
-  const avgDays=active.length?Math.round(active.reduce((s,w)=>s+daysSince(w.buyDate),0)/active.length):0;
-  return {active:active.length,sold:sold.length,totalCost,totalMarket,unrealized,realized,avgDays};
+  const a=inventory.filter(w=>w.status!=='Sold'),s=inventory.filter(w=>w.status==='Sold');
+  const tc=a.reduce((x,w)=>x+w.buyPrice,0),tm=a.reduce((x,w)=>x+w.market,0);
+  return{active:a.length,sold:s.length,totalCost:tc,totalMarket:tm,unrealized:tm-tc,realized:s.reduce((x,w)=>x+(w.soldPrice-w.buyPrice),0),avgDays:a.length?Math.round(a.reduce((x,w)=>x+daysSince(w.buyDate),0)/a.length):0};
 }
-
 function renderKPIs(){
   const k=calcKPIs();
   const items=[
     {label:'In Stock',value:k.active,delta:'',cls:''},
-    {label:'Total Inv. Value',value:fmt(k.totalMarket),delta:(k.unrealized>=0?'+ ':'- ')+fmt(k.unrealized)+' unrealized',cls:k.unrealized>=0?'delta-up':'delta-down'},
+    {label:'Portfolio Value',value:fmt(k.totalMarket),delta:(k.unrealized>=0?'+ ':'- ')+fmt(k.unrealized)+' unrealized',cls:k.unrealized>=0?'delta-up':'delta-down'},
     {label:'Unrealized P&L',value:(k.unrealized>=0?'+':'-')+fmt(k.unrealized),delta:k.totalCost?pct(k.totalMarket,k.totalCost)+' gain':'N/A',cls:k.unrealized>=0?'delta-up':'delta-down'},
-    {label:'Realized Profit',value:'+'+fmt(k.realized),delta:k.sold+' watches sold',cls:'delta-up'},
-    {label:'Avg Hold (days)',value:k.avgDays+'d',delta:k.avgDays>30?'Review slow movers':'On track',cls:k.avgDays>30?'delta-down':'delta-up'}
+    {label:'Realized Profit',value:'+'+fmt(k.realized),delta:k.sold+' sold',cls:'delta-up'},
+    {label:'Avg Hold',value:k.avgDays+'d',delta:k.avgDays>30?'Review slow movers':'Good turnover',cls:k.avgDays>30?'delta-down':'delta-up'}
   ];
-  document.getElementById('kpi-grid').innerHTML=items.map(i=>`
-    <div class="kpi-card">
-      <div class="kpi-label">${i.label}</div>
-      <div class="kpi-value mono">${i.value}</div>
-      ${i.delta?`<div class="kpi-delta ${i.cls}">${i.delta}</div>`:''}
-    </div>`).join('');
+  document.getElementById('kpi-grid').innerHTML=items.map(i=>`<div class="kpi-card"><div class="kpi-label">${i.label}</div><div class="kpi-value">${i.value}</div>${i.delta?`<div class="kpi-delta ${i.cls}">${i.delta}</div>`:''}</div>`).join('');
 }
 
-// ── TABLE ROWS ──
-function statusBadge(s){
-  const cls=s==='In Stock'?'status-stock':s==='Listed'?'status-listed':'status-sold';
-  return `<span class="status-badge ${cls}">${s}</span>`;
-}
-function daysBadge(d){
-  const cls=d>60?'days-hot':d>30?'days-warn':'days-ok';
-  return `<span class="days-badge ${cls}">${d}d</span>`;
-}
+// ── TABLES ──
+function statusBadge(s){return`<span class="status-badge ${s==='In Stock'?'status-stock':s==='Listed'?'status-listed':'status-sold'}">${s}</span>`;}
+function daysBadge(d){return`<span class="days-badge ${d>60?'days-hot':d>30?'days-warn':'days-ok'}">${d}d</span>`;}
 function watchRow(w,full=false){
   const pnl=w.status==='Sold'?(w.soldPrice-w.buyPrice):(w.market-w.buyPrice);
   const cls=pnl>=0?'profit-pos':'profit-neg';
   const days=daysSince(w.buyDate);
-  const actions=w.status!=='Sold'?`
-    <div class="action-btns">
-      <button class="action-btn sell-btn" title="Mark Sold" onclick="openSoldModal(${w.id})"><i data-lucide="check-circle" style="width:14px;height:14px;"></i></button>
-      <button class="action-btn" title="Toggle Listed" onclick="toggleListed(${w.id})"><i data-lucide="tag" style="width:14px;height:14px;"></i></button>
-      <button class="action-btn delete-btn" title="Delete" onclick="openDeleteModal(${w.id})"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></button>
-    </div>`:`<div class="action-btns"><button class="action-btn delete-btn" title="Delete" onclick="openDeleteModal(${w.id})"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></button></div>`;
-  return `<tr>
-    <td><div class="watch-name">${w.brand} ${w.model}</div>${full?`<div class="watch-ref">${w.ref}</div>`:''}</td>
-    ${full?`<td class="watch-ref mono">${w.ref}</td><td style="color:var(--color-text-muted)">${w.condition}</td>`:''}
-    <td class="price-cell">${fmt(w.buyPrice)}</td>
-    <td class="market-cell">${w.status==='Sold'?fmt(w.soldPrice||0):fmt(w.market)}</td>
-    <td class="${cls}">${pnl>=0?'+':''}${fmt(pnl)} <span style="color:var(--color-text-faint);font-size:10px">(${pct(w.status==='Sold'?(w.soldPrice||0):w.market,w.buyPrice)})</span></td>
-    <td>${daysBadge(days)}</td>
-    <td>${statusBadge(w.status)}</td>
-    <td>${actions}</td>
-  </tr>`;
+  const actions=w.status!=='Sold'?`<div class="action-btns"><button class="action-btn sell-btn" title="Sell" onclick="openSoldModal(${w.id})"><i data-lucide="check-circle" style="width:14px;height:14px;"></i></button><button class="action-btn" title="List" onclick="toggleListed(${w.id})"><i data-lucide="tag" style="width:14px;height:14px;"></i></button><button class="action-btn delete-btn" title="Delete" onclick="openDeleteModal(${w.id})"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></button></div>`:`<div class="action-btns"><button class="action-btn delete-btn" title="Delete" onclick="openDeleteModal(${w.id})"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></button></div>`;
+  return`<tr><td><div class="watch-name">${w.brand} ${w.model}</div>${full?`<div class="watch-ref">${w.ref}</div>`:''}</td>${full?`<td class="watch-ref mono">${w.ref}</td><td style="color:var(--text-secondary)">${w.condition}</td>`:''}<td class="price-cell">${fmt(w.buyPrice)}</td><td class="market-cell">${w.status==='Sold'?fmt(w.soldPrice||0):fmt(w.market)}</td><td class="${cls}">${pnl>=0?'+':''}${fmt(pnl)} <span style="color:var(--text-faint);font-size:10px">(${pct(w.status==='Sold'?(w.soldPrice||0):w.market,w.buyPrice)})</span></td><td>${daysBadge(days)}</td><td>${statusBadge(w.status)}</td><td>${actions}</td></tr>`;
 }
-
-function filterBySearch(list){
-  if(!searchQuery) return list;
-  const q = searchQuery.toLowerCase();
-  return list.filter(w =>
-    w.brand.toLowerCase().includes(q) ||
-    w.model.toLowerCase().includes(q) ||
-    w.ref.toLowerCase().includes(q) ||
-    w.channel.toLowerCase().includes(q)
-  );
-}
-
+function filterBySearch(list){if(!searchQuery)return list;const q=searchQuery.toLowerCase();return list.filter(w=>w.brand.toLowerCase().includes(q)||w.model.toLowerCase().includes(q)||w.ref.toLowerCase().includes(q)||w.channel.toLowerCase().includes(q));}
 function renderDashTable(){
-  const active = filterBySearch(inventory.filter(w=>w.status!=='Sold')).slice(0,8);
-  document.getElementById('dash-table-body').innerHTML=active.map(w=>watchRow(w)).join('');
-  document.getElementById('inv-count-label').textContent=`${active.length} watches`;
+  const a=filterBySearch(inventory.filter(w=>w.status!=='Sold')).slice(0,8);
+  document.getElementById('dash-table-body').innerHTML=a.map(w=>watchRow(w)).join('');
+  document.getElementById('inv-count-label').textContent=`${a.length} watches`;
   lucide.createIcons();
 }
-
 function renderFullTable(){
-  const statusFilter=document.getElementById('filter-status').value;
-  const brandFilter=document.getElementById('filter-brand').value;
+  const sf=document.getElementById('filter-status').value,bf=document.getElementById('filter-brand').value;
   let rows=inventory;
-  if(statusFilter!=='all') rows=rows.filter(w=>w.status===statusFilter);
-  if(brandFilter!=='all') rows=rows.filter(w=>w.brand===brandFilter);
-  rows = filterBySearch(rows);
+  if(sf!=='all')rows=rows.filter(w=>w.status===sf);
+  if(bf!=='all')rows=rows.filter(w=>w.brand===bf);
+  rows=filterBySearch(rows);
   document.getElementById('full-table-body').innerHTML=rows.map(w=>watchRow(w,true)).join('');
   const active=inventory.filter(w=>w.status!=='Sold');
   document.getElementById('total-inv-value').textContent=fmt(active.reduce((s,w)=>s+w.market,0));
   document.getElementById('total-cost-basis').textContent=fmt(active.reduce((s,w)=>s+w.buyPrice,0));
   const gain=active.reduce((s,w)=>s+(w.market-w.buyPrice),0);
   const el=document.getElementById('unrealized-gain');
-  el.textContent=(gain>=0?'+':'-')+fmt(gain);
-  el.style.color=gain>=0?'var(--color-success)':'var(--color-error)';
-  // Update brand filter options
+  el.textContent=(gain>=0?'+':'-')+fmt(gain);el.style.color=gain>=0?'var(--green)':'var(--red)';
   const brands=[...new Set(inventory.map(w=>w.brand))].sort();
-  const bf=document.getElementById('filter-brand');
-  const currentVal=bf.value;
-  bf.innerHTML='<option value="all">All Brands</option>'+brands.map(b=>`<option value="${b}" ${b===currentVal?'selected':''}>${b}</option>`).join('');
+  const bfel=document.getElementById('filter-brand');const cv=bfel.value;
+  bfel.innerHTML='<option value="all">All Brands</option>'+brands.map(b=>`<option value="${b}" ${b===cv?'selected':''}>${b}</option>`).join('');
   lucide.createIcons();
 }
-
 function renderSoldTable(){
   const sold=filterBySearch(inventory.filter(w=>w.status==='Sold'));
   const allSold=inventory.filter(w=>w.status==='Sold');
-  const totalRealized=allSold.reduce((s,w)=>s+(w.soldPrice-w.buyPrice),0);
-  const avgMargin=allSold.length?allSold.reduce((s,w)=>s+((w.soldPrice-w.buyPrice)/w.buyPrice*100),0)/allSold.length:0;
-  const avgHold=allSold.length?Math.round(allSold.reduce((s,w)=>s+daysSince(w.buyDate),0)/allSold.length):0;
+  const tr=allSold.reduce((s,w)=>s+(w.soldPrice-w.buyPrice),0);
+  const am=allSold.length?allSold.reduce((s,w)=>s+((w.soldPrice-w.buyPrice)/w.buyPrice*100),0)/allSold.length:0;
+  const ah=allSold.length?Math.round(allSold.reduce((s,w)=>s+daysSince(w.buyDate),0)/allSold.length):0;
   document.getElementById('sold-kpis').innerHTML=`
     <div class="kpi-card"><div class="kpi-label">Watches Sold</div><div class="kpi-value">${allSold.length}</div></div>
-    <div class="kpi-card"><div class="kpi-label">Total Realized</div><div class="kpi-value mono profit-pos">+${fmt(totalRealized)}</div></div>
-    <div class="kpi-card"><div class="kpi-label">Avg Margin</div><div class="kpi-value mono delta-up">${avgMargin.toFixed(1)}%</div></div>
-    <div class="kpi-card"><div class="kpi-label">Avg Hold</div><div class="kpi-value mono">${avgHold}d</div></div>`;
-  document.getElementById('sold-table-body').innerHTML=sold.map(w=>{
-    const pnl=w.soldPrice-w.buyPrice;
-    const days=daysSince(w.buyDate);
-    return`<tr>
-      <td><div class="watch-name">${w.brand} ${w.model}</div></td>
-      <td class="watch-ref mono">${w.ref}</td>
-      <td class="price-cell">${fmt(w.buyPrice)}</td>
-      <td class="price-cell">${fmt(w.soldPrice)}</td>
-      <td class="${pnl>=0?'profit-pos':'profit-neg'}">${pnl>=0?'+':''}${fmt(pnl)}</td>
-      <td>${daysBadge(days)}</td>
-      <td class="${pnl>=0?'profit-pos':'profit-neg'}">${pct(w.soldPrice,w.buyPrice)}</td>
-    </tr>`;}).join('');
+    <div class="kpi-card"><div class="kpi-label">Total Realized</div><div class="kpi-value profit-pos">+${fmt(tr)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Avg Margin</div><div class="kpi-value delta-up">${am.toFixed(1)}%</div></div>
+    <div class="kpi-card"><div class="kpi-label">Avg Hold</div><div class="kpi-value">${ah}d</div></div>`;
+  document.getElementById('sold-table-body').innerHTML=sold.map(w=>{const pnl=w.soldPrice-w.buyPrice;return`<tr><td><div class="watch-name">${w.brand} ${w.model}</div></td><td class="watch-ref mono">${w.ref}</td><td class="price-cell">${fmt(w.buyPrice)}</td><td class="price-cell">${fmt(w.soldPrice)}</td><td class="${pnl>=0?'profit-pos':'profit-neg'}">${pnl>=0?'+':''}${fmt(pnl)}</td><td>${daysBadge(daysSince(w.buyDate))}</td><td class="${pnl>=0?'profit-pos':'profit-neg'}">${pct(w.soldPrice,w.buyPrice)}</td></tr>`;}).join('');
 }
 
 // ── CHART ──
 function renderChart(){
-  const ctx=document.getElementById('profitChart');
-  if(!ctx)return;
+  const ctx=document.getElementById('profitChart');if(!ctx)return;
   if(profitChart)profitChart.destroy();
   const active=inventory.filter(w=>w.status!=='Sold');
-  const labels=active.map(w=>`${w.brand.split(' ')[0]} ${w.model}`);
-  const buyData=active.map(w=>w.buyPrice);
-  const marketData=active.map(w=>w.market);
   profitChart=new Chart(ctx,{
     type:'bar',
     data:{
-      labels,
+      labels:active.map(w=>`${w.brand.split(' ')[0]} ${w.model}`),
       datasets:[
-        {label:'Buy Price',data:buyData,backgroundColor:'rgba(124,109,250,0.3)',borderColor:'rgba(124,109,250,0.8)',borderWidth:1,borderRadius:4},
-        {label:'C24 Value',data:marketData,backgroundColor:'rgba(45,212,191,0.3)',borderColor:'rgba(45,212,191,0.8)',borderWidth:1,borderRadius:4}
+        {label:'Cost',data:active.map(w=>w.buyPrice),backgroundColor:'rgba(201,169,110,0.15)',borderColor:'rgba(201,169,110,0.5)',borderWidth:1,borderRadius:3},
+        {label:'C24 Value',data:active.map(w=>w.market),backgroundColor:'rgba(111,207,151,0.15)',borderColor:'rgba(111,207,151,0.5)',borderWidth:1,borderRadius:3}
       ]
     },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'rgba(200,200,220,0.7)',font:{size:11,family:'Inter'}}}},
-      scales:{x:{ticks:{color:'rgba(200,200,220,0.5)',maxRotation:30,font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}},
-              y:{ticks:{color:'rgba(200,200,220,0.5)',callback:v=>'$'+v.toLocaleString(),font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}}}
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'rgba(226,221,212,0.5)',font:{size:10,family:'Outfit'}}}},
+      scales:{
+        x:{ticks:{color:'rgba(226,221,212,0.3)',maxRotation:30,font:{size:9,family:'Outfit'}},grid:{color:'rgba(201,169,110,0.04)'}},
+        y:{ticks:{color:'rgba(226,221,212,0.3)',callback:v=>'$'+v.toLocaleString(),font:{size:9,family:'Outfit'}},grid:{color:'rgba(201,169,110,0.04)'}}
+      }
+    }
   });
 }
 
 // ── SEARCH ──
-function handleSearch(q){
-  searchQuery = q;
-  renderAll();
-}
+function handleSearch(q){searchQuery=q;renderAll();}
 
-// ── ADD WATCH ──
-function openAddModal(){
-  document.getElementById('add-modal').classList.add('open');
-  document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
-  document.getElementById('f-brand').focus();
-}
-function closeModal(){
-  document.getElementById('add-modal').classList.remove('open');
-  document.getElementById('fetch-status').innerHTML='';
-  ['f-brand','f-model','f-ref','f-year','f-price'].forEach(id=>document.getElementById(id).value='');
-}
-
+// ── ADD ──
+function openAddModal(){document.getElementById('add-modal').classList.add('open');document.getElementById('f-date').value=new Date().toISOString().split('T')[0];document.getElementById('f-brand').focus();}
+function closeModal(){document.getElementById('add-modal').classList.remove('open');document.getElementById('fetch-status').innerHTML='';['f-brand','f-model','f-ref','f-year','f-price'].forEach(id=>document.getElementById(id).value='');}
 function addWatch(){
-  const brand=document.getElementById('f-brand').value.trim();
-  const model=document.getElementById('f-model').value.trim();
-  const price=parseFloat(document.getElementById('f-price').value);
-  if(!brand||!model||!price){showToast('Fill in brand, model & price','!');return;}
+  const brand=document.getElementById('f-brand').value.trim(),model=document.getElementById('f-model').value.trim(),price=parseFloat(document.getElementById('f-price').value);
+  if(!brand||!model||!price){showToast('Fill in brand, model & price');return;}
   const el=document.getElementById('fetch-status');
-  el.innerHTML=`<div class="fetch-row"><div class="fetch-spinner"></div>Fetching Chrono24 live price...</div>`;
+  el.innerHTML=`<div class="fetch-row"><div class="fetch-spinner"></div>Fetching Chrono24 valuation...</div>`;
   setTimeout(()=>{
-    const condition=document.getElementById('f-condition').value;
-    const marketVal=c24Price(brand,price,condition);
-    const watch={
-      id:nextId++,brand,model,
-      ref:document.getElementById('f-ref').value||'-',
-      year:document.getElementById('f-year').value||'-',
-      condition,buyPrice:price,
-      buyDate:document.getElementById('f-date').value||new Date().toISOString().split('T')[0],
-      channel:document.getElementById('f-channel').value,
-      market:marketVal,status:'In Stock',soldPrice:null,soldDate:null
-    };
-    inventory.unshift(watch);
-    saveInventory();
-    el.innerHTML=`<div class="fetch-row" style="color:var(--color-success)">C24 Fair Value: <strong>${fmt(marketVal)}</strong> | P&L: <strong>${marketVal>price?'+':''} ${fmt(marketVal-price)}</strong></div>`;
-    setTimeout(()=>{closeModal();renderAll();showToast(`${brand} ${model} added! C24: ${fmt(marketVal)}`,'OK');},1000);
+    const cond=document.getElementById('f-condition').value,mv=c24Price(brand,price,cond);
+    inventory.unshift({id:nextId++,brand,model,ref:document.getElementById('f-ref').value||'-',year:document.getElementById('f-year').value||'-',condition:cond,buyPrice:price,buyDate:document.getElementById('f-date').value||new Date().toISOString().split('T')[0],channel:document.getElementById('f-channel').value,market:mv,status:'In Stock',soldPrice:null,soldDate:null});
+    saveInv();
+    el.innerHTML=`<div class="fetch-row" style="color:var(--green)">C24 Value: <strong>${fmt(mv)}</strong> | P&L: <strong>${mv>=price?'+':''}${fmt(mv-price)}</strong></div>`;
+    setTimeout(()=>{closeModal();renderAll();showToast(`${brand} ${model} added`);},900);
   },1200);
 }
 
-// ── MARK SOLD ──
-function openSoldModal(id){
-  soldTarget=inventory.find(w=>w.id===id);
-  if(!soldTarget)return;
-  document.getElementById('sold-watch-name').textContent=`${soldTarget.brand} ${soldTarget.model}`;
-  document.getElementById('sold-price-input').value=soldTarget.market;
-  document.getElementById('sold-modal').classList.add('open');
-  setTimeout(()=>document.getElementById('sold-price-input').focus(),100);
-}
+// ── SOLD ──
+function openSoldModal(id){soldTarget=inventory.find(w=>w.id===id);if(!soldTarget)return;document.getElementById('sold-watch-name').textContent=`${soldTarget.brand} ${soldTarget.model}`;document.getElementById('sold-price-input').value=soldTarget.market;document.getElementById('sold-modal').classList.add('open');setTimeout(()=>document.getElementById('sold-price-input').focus(),100);}
 function closeSoldModal(){document.getElementById('sold-modal').classList.remove('open');soldTarget=null;}
-function confirmSold(){
-  if(!soldTarget)return;
-  const sp=parseFloat(document.getElementById('sold-price-input').value);
-  if(!sp){showToast('Enter a valid sale price','!');return;}
-  soldTarget.status='Sold';soldTarget.soldPrice=sp;soldTarget.soldDate=new Date().toISOString().split('T')[0];
-  closeSoldModal();saveInventory();renderAll();
-  const pnl=sp-soldTarget.buyPrice;
-  showToast(`${soldTarget.brand} ${soldTarget.model} sold! P&L: ${pnl>=0?'+':''}${fmt(pnl)}`,'OK');
-}
+function confirmSold(){if(!soldTarget)return;const sp=parseFloat(document.getElementById('sold-price-input').value);if(!sp){showToast('Enter a valid price');return;}soldTarget.status='Sold';soldTarget.soldPrice=sp;soldTarget.soldDate=new Date().toISOString().split('T')[0];closeSoldModal();saveInv();renderAll();showToast(`${soldTarget.brand} ${soldTarget.model} sold for ${fmt(sp)}`);}
 
-// ── DELETE WATCH ──
-function openDeleteModal(id){
-  deleteTarget=inventory.find(w=>w.id===id);
-  if(!deleteTarget)return;
-  document.getElementById('delete-watch-name').textContent=`Delete ${deleteTarget.brand} ${deleteTarget.model}?`;
-  document.getElementById('delete-modal').classList.add('open');
-}
+// ── DELETE ──
+function openDeleteModal(id){deleteTarget=inventory.find(w=>w.id===id);if(!deleteTarget)return;document.getElementById('delete-watch-name').textContent=`Delete ${deleteTarget.brand} ${deleteTarget.model}?`;document.getElementById('delete-modal').classList.add('open');}
 function closeDeleteModal(){document.getElementById('delete-modal').classList.remove('open');deleteTarget=null;}
-function confirmDelete(){
-  if(!deleteTarget)return;
-  const name=`${deleteTarget.brand} ${deleteTarget.model}`;
-  inventory=inventory.filter(w=>w.id!==deleteTarget.id);
-  closeDeleteModal();saveInventory();renderAll();
-  showToast(`${name} removed from inventory`,'X');
-}
-
-function toggleListed(id){
-  const w=inventory.find(x=>x.id===id);if(!w)return;
-  w.status=w.status==='Listed'?'In Stock':'Listed';
-  saveInventory();renderAll();showToast(`${w.brand} ${w.model} -> ${w.status}`,'OK');
-}
+function confirmDelete(){if(!deleteTarget)return;const n=`${deleteTarget.brand} ${deleteTarget.model}`;inventory=inventory.filter(w=>w.id!==deleteTarget.id);closeDeleteModal();saveInv();renderAll();showToast(`${n} removed`);}
+function toggleListed(id){const w=inventory.find(x=>x.id===id);if(!w)return;w.status=w.status==='Listed'?'In Stock':'Listed';saveInv();renderAll();showToast(`${w.brand} ${w.model} -> ${w.status}`);}
 
 // ── PRICE LOOKUP ──
 function runLookup(){
-  const brand=document.getElementById('lookup-brand').value.trim();
-  const model=document.getElementById('lookup-model').value.trim();
-  const condition=document.getElementById('lookup-condition').value;
-  if(!brand||!model){showToast('Enter brand and model','!');return;}
-  const btn=document.getElementById('lookup-btn-text');
-  btn.textContent='Fetching...';
-  const result=document.getElementById('lookup-result');
-  result.innerHTML=`<div class="fetch-row"><div class="fetch-spinner"></div>Querying Chrono24 listings...</div>`;
+  const brand=document.getElementById('lookup-brand').value.trim(),model=document.getElementById('lookup-model').value.trim(),cond=document.getElementById('lookup-condition').value;
+  if(!brand||!model){showToast('Enter brand and model');return;}
+  const btn=document.getElementById('lookup-btn-text'),result=document.getElementById('lookup-result');
+  btn.textContent='Fetching...';result.innerHTML=`<div class="fetch-row"><div class="fetch-spinner"></div>Querying Chrono24...</div>`;
   setTimeout(()=>{
-    const data = lookupC24(brand,model,condition);
-    result.innerHTML=`
-      <div class="card" style="border:1px solid var(--color-border)">
-        <div class="card-body">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3)">
-            <div><div class="watch-name">${data.matched}</div><div class="watch-ref">${condition} | ${data.comps} active listings</div></div>
-            <span class="status-badge status-stock">Live</span>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-3);margin-bottom:var(--space-3)">
-            <div class="kpi-card" style="background:var(--color-surface-offset)"><div class="kpi-label">Low</div><div class="kpi-value mono" style="font-size:1rem">${fmt(data.low)}</div></div>
-            <div class="kpi-card" style="background:var(--color-primary-highlight);border-color:var(--color-primary)"><div class="kpi-label">Fair Value</div><div class="kpi-value mono" style="font-size:1rem;color:var(--color-primary)">${fmt(data.fair)}</div></div>
-            <div class="kpi-card" style="background:var(--color-surface-offset)"><div class="kpi-label">High</div><div class="kpi-value mono" style="font-size:1rem">${fmt(data.high)}</div></div>
-          </div>
-          <button class="btn-primary" onclick="document.getElementById('f-brand').value='${brand}';document.getElementById('f-model').value='${model}';openAddModal()" style="font-size:var(--text-xs);width:100%">+ Add to Inventory at Fair Value</button>
-        </div>
-      </div>`;
+    const d=lookupC24(brand,model,cond);
+    result.innerHTML=`<div class="card" style="border:1px solid rgba(201,169,110,0.1)"><div class="card-body"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem"><div><div class="watch-name">${d.matched}</div><div class="watch-ref">${cond} | ${d.comps} listings</div></div><span class="status-badge status-stock">Live</span></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;margin-bottom:0.75rem"><div class="kpi-card" style="background:var(--navy-mid)"><div class="kpi-label">Low</div><div class="kpi-value" style="font-size:1rem">${fmt(d.low)}</div></div><div class="kpi-card" style="background:var(--gold-dim);border-color:rgba(201,169,110,0.2)"><div class="kpi-label">Fair Value</div><div class="kpi-value" style="font-size:1rem;color:var(--gold)">${fmt(d.fair)}</div></div><div class="kpi-card" style="background:var(--navy-mid)"><div class="kpi-label">High</div><div class="kpi-value" style="font-size:1rem">${fmt(d.high)}</div></div></div><button class="btn-primary" onclick="document.getElementById('f-brand').value='${brand}';document.getElementById('f-model').value='${model}';openAddModal()" style="font-size:var(--text-xs);width:100%">+ Add to Collection</button></div></div>`;
     btn.textContent='Fetch Chrono24 Price';
   },1400);
 }
 
-// ── WATCH IDENTIFICATION (Image Upload) ──
-const IDENTIFIABLE_WATCHES = [
-  {brand:'Rolex',model:'Submariner',ref:'124060',confidence:96,fair:13800,desc:'No-date Submariner, Oystersteel, 41mm. Ceramic bezel, Caliber 3230.'},
-  {brand:'Rolex',model:'Daytona',ref:'116500LN',confidence:94,fair:29500,desc:'Cosmograph Daytona, Oystersteel, white dial. Ceramic bezel, Caliber 4130.'},
-  {brand:'Rolex',model:'GMT-Master II',ref:'126710BLNR',confidence:93,fair:18200,desc:'Batman GMT, Oystersteel, bi-color ceramic bezel. Jubilee bracelet, Caliber 3285.'},
-  {brand:'Patek Philippe',model:'Nautilus',ref:'5711/1A',confidence:95,fair:125000,desc:'Blue dial Nautilus, stainless steel, 40mm. Caliber 26-330 S C. Discontinued.'},
-  {brand:'Audemars Piguet',model:'Royal Oak',ref:'15500ST',confidence:92,fair:32000,desc:'Royal Oak self-winding, 41mm, blue dial. Stainless steel, Caliber 4302.'},
-  {brand:'Omega',model:'Speedmaster',ref:'310.30.42.50.01.001',confidence:91,fair:6100,desc:'Moonwatch Professional, 42mm, sapphire sandwich. Co-Axial Master Chronometer.'},
-  {brand:'Cartier',model:'Santos',ref:'WSSA0018',confidence:90,fair:7600,desc:'Santos de Cartier, medium, stainless steel. SmartLink QuickSwitch bracelet.'},
-  {brand:'IWC',model:'Portugieser',ref:'IW500710',confidence:89,fair:7800,desc:'Portugieser Automatic 7-Day, 42.3mm, blue dial. Pellaton winding, Caliber 52010.'},
+// ── IDENTIFY ──
+const ID_WATCHES=[
+  {brand:'Rolex',model:'Submariner',ref:'124060',confidence:96,desc:'No-date Submariner, Oystersteel 41mm. Ceramic bezel, Cal. 3230.'},
+  {brand:'Rolex',model:'Daytona',ref:'116500LN',confidence:94,desc:'Cosmograph Daytona, white dial. Ceramic bezel, Cal. 4130.'},
+  {brand:'Rolex',model:'GMT-Master II',ref:'126710BLNR',confidence:93,desc:'Batman GMT, Jubilee bracelet. Bi-color ceramic, Cal. 3285.'},
+  {brand:'Patek Philippe',model:'Nautilus',ref:'5711/1A',confidence:95,desc:'Blue dial, stainless steel 40mm. Cal. 26-330 S C. Discontinued.'},
+  {brand:'Audemars Piguet',model:'Royal Oak',ref:'15500ST',confidence:92,desc:'41mm blue dial, stainless steel. Cal. 4302.'},
+  {brand:'Omega',model:'Speedmaster',ref:'310.30.42',confidence:91,desc:'Moonwatch Professional 42mm. Co-Axial Master Chronometer.'},
+  {brand:'Cartier',model:'Santos',ref:'WSSA0018',confidence:90,desc:'Santos de Cartier, medium. SmartLink QuickSwitch bracelet.'},
+  {brand:'IWC',model:'Portugieser',ref:'IW500710',confidence:89,desc:'Automatic 7-Day 42.3mm, blue dial. Pellaton winding, Cal. 52010.'},
 ];
-
-function handleUpload(input){
-  const file = input.files[0];
-  if(!file) return;
-  const previewArea = document.getElementById('upload-preview-area');
-  const reader = new FileReader();
-  reader.onload = function(e){
-    previewArea.innerHTML = `<img src="${e.target.result}" class="upload-preview" alt="Uploaded watch">`;
-    identifyWatch(e.target.result);
-  };
-  reader.readAsDataURL(file);
-}
-
-// Set up drag and drop
+function handleUpload(input){const f=input.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{document.getElementById('upload-preview-area').innerHTML=`<img src="${e.target.result}" class="upload-preview">`;identifyWatch();};r.readAsDataURL(f);}
 document.addEventListener('DOMContentLoaded',()=>{
-  const zone = document.getElementById('upload-zone');
-  if(!zone) return;
-  zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-over');});
-  zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
-  zone.addEventListener('drop',e=>{
-    e.preventDefault();zone.classList.remove('drag-over');
-    const file = e.dataTransfer.files[0];
-    if(file && file.type.startsWith('image/')){
-      const input = document.getElementById('watch-upload');
-      const dt = new DataTransfer();
-      dt.items.add(file);
-      input.files = dt.files;
-      handleUpload(input);
-    }
-  });
+  const z=document.getElementById('upload-zone');if(!z)return;
+  z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('drag-over');});
+  z.addEventListener('dragleave',()=>z.classList.remove('drag-over'));
+  z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/')){const dt=new DataTransfer();dt.items.add(f);const inp=document.getElementById('watch-upload');inp.files=dt.files;handleUpload(inp);}});
 });
-
-function identifyWatch(imgSrc){
-  const resultEl = document.getElementById('identify-result');
-  resultEl.innerHTML = `<div class="fetch-row"><div class="fetch-spinner"></div>Analyzing watch image...</div>`;
+function identifyWatch(){
+  const el=document.getElementById('identify-result');
+  el.innerHTML=`<div class="fetch-row"><div class="fetch-spinner"></div>Analyzing image...</div>`;
+  setTimeout(()=>{el.innerHTML=`<div class="fetch-row"><div class="fetch-spinner"></div>Cross-referencing Chrono24...</div>`;
   setTimeout(()=>{
-    resultEl.innerHTML = `<div class="fetch-row"><div class="fetch-spinner"></div>Cross-referencing Chrono24 database...</div>`;
-    setTimeout(()=>{
-      const watch = IDENTIFIABLE_WATCHES[Math.floor(Math.random()*IDENTIFIABLE_WATCHES.length)];
-      const data = lookupC24(watch.brand, watch.model+' '+watch.ref, 'Good');
-      resultEl.innerHTML = `
-        <div class="identify-result">
-          <div class="identify-header">
-            <div class="identify-brand">${watch.brand} ${watch.model}</div>
-            <span class="identify-confidence">${watch.confidence}% match</span>
-          </div>
-          <div class="watch-ref" style="margin-bottom:var(--space-2)">Ref. ${watch.ref}</div>
-          <p style="font-size:var(--text-sm);color:var(--color-text-muted);margin-bottom:var(--space-3)">${watch.desc}</p>
-          <div class="identify-grid">
-            <div class="kpi-card" style="background:var(--color-surface-offset)"><div class="kpi-label">Low</div><div class="kpi-value mono" style="font-size:1rem">${fmt(data.low)}</div></div>
-            <div class="kpi-card" style="background:var(--color-primary-highlight);border-color:var(--color-primary)"><div class="kpi-label">Fair Value</div><div class="kpi-value mono" style="font-size:1rem;color:var(--color-primary)">${fmt(data.fair)}</div></div>
-            <div class="kpi-card" style="background:var(--color-surface-offset)"><div class="kpi-label">High</div><div class="kpi-value mono" style="font-size:1rem">${fmt(data.high)}</div></div>
-          </div>
-          <div style="display:flex;gap:var(--space-2);margin-top:var(--space-4)">
-            <button class="btn-primary" onclick="document.getElementById('f-brand').value='${watch.brand}';document.getElementById('f-model').value='${watch.model}';document.getElementById('f-ref').value='${watch.ref}';openAddModal()" style="flex:1;font-size:var(--text-xs)">+ Add to Inventory</button>
-            <button class="btn-ghost" onclick="document.getElementById('upload-preview-area').innerHTML='';document.getElementById('identify-result').innerHTML='';document.getElementById('watch-upload').value=''" style="font-size:var(--text-xs)">Clear</button>
-          </div>
-        </div>`;
-    },1200);
-  },1000);
+    const w=ID_WATCHES[Math.floor(Math.random()*ID_WATCHES.length)];
+    const d=lookupC24(w.brand,w.model+' '+w.ref,'Good');
+    el.innerHTML=`<div class="identify-result"><div class="identify-header"><div class="identify-brand">${w.brand} ${w.model}</div><span class="identify-confidence">${w.confidence}% match</span></div><div class="watch-ref" style="margin-bottom:0.4rem">Ref. ${w.ref}</div><p style="font-size:var(--text-sm);color:var(--text-secondary);margin-bottom:0.75rem">${w.desc}</p><div class="identify-grid"><div class="kpi-card" style="background:var(--navy)"><div class="kpi-label">Low</div><div class="kpi-value" style="font-size:1rem">${fmt(d.low)}</div></div><div class="kpi-card" style="background:var(--gold-dim);border-color:rgba(201,169,110,0.15)"><div class="kpi-label">Fair Value</div><div class="kpi-value" style="font-size:1rem;color:var(--gold)">${fmt(d.fair)}</div></div><div class="kpi-card" style="background:var(--navy)"><div class="kpi-label">High</div><div class="kpi-value" style="font-size:1rem">${fmt(d.high)}</div></div></div><div style="display:flex;gap:0.5rem;margin-top:1rem"><button class="btn-primary" onclick="document.getElementById('f-brand').value='${w.brand}';document.getElementById('f-model').value='${w.model}';document.getElementById('f-ref').value='${w.ref}';openAddModal()" style="flex:1;font-size:var(--text-xs)">+ Add to Collection</button><button class="btn-ghost" onclick="document.getElementById('upload-preview-area').innerHTML='';document.getElementById('identify-result').innerHTML='';document.getElementById('watch-upload').value=''" style="font-size:var(--text-xs)">Clear</button></div></div>`;
+  },1200);},1000);
 }
 
-// ── AI ASSISTANT ──
+// ── AI ──
 function addMsg(text,role,panel){
   const el=document.getElementById(`ai-messages-${panel}`);
   const time=new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'});
-  const div=document.createElement('div');
-  div.className=`msg msg-${role}`;
-  div.innerHTML=`<div class="msg-avatar">${role==='user'?'D':'AI'}</div><div><div class="msg-bubble">${text}</div><div class="msg-time">${time}</div></div>`;
+  const div=document.createElement('div');div.className=`msg msg-${role}`;
+  div.innerHTML=`<div class="msg-avatar">${role==='user'?'D':'W'}</div><div><div class="msg-bubble">${text}</div><div class="msg-time">${time}</div></div>`;
   el.appendChild(div);el.scrollTop=el.scrollHeight;
 }
-
 function aiRespond(msg,panel){
-  const lower=msg.toLowerCase();
-  const k=calcKPIs();
-  const active=inventory.filter(w=>w.status!=='Sold');
-  const sold=inventory.filter(w=>w.status==='Sold');
-
-  // MARK SOLD via AI
+  const lower=msg.toLowerCase(),k=calcKPIs(),active=inventory.filter(w=>w.status!=='Sold'),sold=inventory.filter(w=>w.status==='Sold');
   const soldMatch=lower.match(/(?:sold?|mark.+sold?)[^\d]*\$?([\d,]+)/);
   const brandMatch=active.find(w=>lower.includes(w.model.toLowerCase())||lower.includes(w.brand.toLowerCase()));
   if((lower.includes('sold')||lower.includes('sell'))&&soldMatch&&brandMatch){
-    const price=parseFloat(soldMatch[1].replace(/,/g,''));
-    brandMatch.status='Sold';brandMatch.soldPrice=price;brandMatch.soldDate=new Date().toISOString().split('T')[0];
-    saveInventory();renderAll();
-    return `Done! <strong>${brandMatch.brand} ${brandMatch.model}</strong> marked as sold for <strong>${fmt(price)}</strong>. P&L: <strong>${price>=brandMatch.buyPrice?'+':''}${fmt(price-brandMatch.buyPrice)}</strong> (${pct(price,brandMatch.buyPrice)}).`;
+    const price=parseFloat(soldMatch[1].replace(/,/g,''));brandMatch.status='Sold';brandMatch.soldPrice=price;brandMatch.soldDate=new Date().toISOString().split('T')[0];saveInv();renderAll();
+    return`Done. <strong>${brandMatch.brand} ${brandMatch.model}</strong> sold for <strong>${fmt(price)}</strong>. P&L: <strong>${price>=brandMatch.buyPrice?'+':''}${fmt(price-brandMatch.buyPrice)}</strong> (${pct(price,brandMatch.buyPrice)}).`;
   }
-
-  // DELETE via AI
-  if(lower.includes('delete')||lower.includes('remove')){
-    const target = inventory.find(w=>lower.includes(w.model.toLowerCase())||lower.includes(w.brand.toLowerCase()));
-    if(target){
-      const name = `${target.brand} ${target.model}`;
-      inventory = inventory.filter(w=>w.id!==target.id);
-      saveInventory();renderAll();
-      return `Removed <strong>${name}</strong> from inventory.`;
-    }
-    return `I couldn't find that watch. Try including the brand or model name, e.g. "Delete the Submariner".`;
-  }
-
-  // ADD via AI
-  if(lower.includes('add')){
-    const priceMatch=lower.match(/\$?([\d,]+)/);
-    const brandNames = ['rolex','patek','audemars','omega','iwc','cartier','breitling','tag heuer','richard mille'];
-    const foundBrand = brandNames.find(b=>lower.includes(b));
-    if(foundBrand && priceMatch){
-      const price=parseFloat(priceMatch[1].replace(/,/g,''));
-      const brandCap = foundBrand.split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
-      // Try to extract model
-      const modelMatch = lower.match(new RegExp(foundBrand+'\\s+([\\w\\s-]+?)(?:\\s+(?:bought|for|at|\\$)|$)','i'));
-      const model = modelMatch ? modelMatch[1].trim().split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ') : 'Unknown';
-      const marketVal = c24Price(brandCap,price,'Good');
-      const watch = {
-        id:nextId++,brand:brandCap,model,ref:'-',year:'-',condition:'Good',
-        buyPrice:price,buyDate:new Date().toISOString().split('T')[0],
-        channel:'Private',market:marketVal,status:'In Stock',soldPrice:null,soldDate:null
-      };
-      inventory.unshift(watch);
-      saveInventory();renderAll();
-      return `Added <strong>${brandCap} ${model}</strong> bought for <strong>${fmt(price)}</strong>. C24 value: <strong>${fmt(marketVal)}</strong>. P&L: <strong>${marketVal>=price?'+':''}${fmt(marketVal-price)}</strong>.`;
-    }
-    return `To add a watch, include the brand and price. Example: "Add a Rolex Submariner bought for $12,500"`;
-  }
-
-  // QUERIES
-  if(lower.includes('stock')||lower.includes('inventory')||lower.includes('how many'))
-    return `You have <strong>${k.active} watches</strong> in stock. Total market value: <strong>${fmt(k.totalMarket)}</strong>. Cost basis: ${fmt(k.totalCost)}. Unrealized gain: <strong>+${fmt(k.unrealized)}</strong>.`;
-
-  if(lower.includes('profit')||lower.includes('earn')||lower.includes('made'))
-    return `Realized profit: <strong>+${fmt(k.realized)}</strong> across ${k.sold} sold watches. Unrealized gain on active inventory: <strong>+${fmt(k.unrealized)}</strong>. Total combined: <strong>+${fmt(k.realized+k.unrealized)}</strong>.`;
-
-  if(lower.includes('slow')||lower.includes('longest')||lower.includes('old')||lower.includes('over 30')){
-    const sorted=[...active].sort((a,b)=>daysSince(b.buyDate)-daysSince(a.buyDate));
-    const slow = sorted.filter(w=>daysSince(w.buyDate)>30);
-    if(slow.length)
-      return `<strong>${slow.length} watches</strong> held over 30 days: ${slow.map(w=>`<strong>${w.brand} ${w.model}</strong> (${daysSince(w.buyDate)}d)`).join(', ')}. Consider listing these on Chrono24.`;
-    return `Slowest mover: <strong>${sorted[0].brand} ${sorted[0].model}</strong> held for <strong>${daysSince(sorted[0].buyDate)} days</strong>. All watches are under 30 days - good turnover!`;
-  }
-
-  if(lower.includes('best')||lower.includes('margin')||lower.includes('highest')){
-    if(lower.includes('avg')||lower.includes('average')){
-      const avgMargin = active.length ? active.reduce((s,w)=>s+((w.market-w.buyPrice)/w.buyPrice*100),0)/active.length : 0;
-      return `Average unrealized margin across ${active.length} active watches: <strong>${avgMargin.toFixed(1)}%</strong>.`;
-    }
-    const best=[...active].sort((a,b)=>(b.market-b.buyPrice)/b.buyPrice-(a.market-a.buyPrice)/a.buyPrice)[0];
-    if(best) return `Best margin: <strong>${best.brand} ${best.model}</strong> with <strong>${pct(best.market,best.buyPrice)}</strong> gain (${fmt(best.market-best.buyPrice)} profit potential).`;
-    return `No active watches to analyze.`;
-  }
-
-  if(lower.includes('list')||lower.includes('listed')){
-    const listed=inventory.filter(w=>w.status==='Listed');
-    return listed.length?`You have <strong>${listed.length} watches</strong> listed: ${listed.map(w=>`${w.brand} ${w.model}`).join(', ')}.`:'No watches currently listed. Use the tag icon on any watch to list it.';
-  }
-
-  if(lower.includes('value')||lower.includes('worth')||lower.includes('price')){
-    const target = active.find(w=>lower.includes(w.model.toLowerCase())||lower.includes(w.brand.toLowerCase()));
-    if(target) return `<strong>${target.brand} ${target.model}</strong> (${target.ref}): Bought at ${fmt(target.buyPrice)}, C24 value: <strong>${fmt(target.market)}</strong>. Unrealized: <strong>${target.market>=target.buyPrice?'+':''}${fmt(target.market-target.buyPrice)}</strong>.`;
-  }
-
-  if(lower.includes('recommend')||lower.includes('should')||lower.includes('suggest')){
-    const ranked=[...active].sort((a,b)=>daysSince(b.buyDate)-daysSince(a.buyDate)).slice(0,2);
-    return `Top sell candidates (longest held): ${ranked.map(w=>`<strong>${w.brand} ${w.model}</strong> (${daysSince(w.buyDate)}d, +${pct(w.market,w.buyPrice)})`).join(', ')}.`;
-  }
-
-  if(lower.includes('reset')){
-    inventory = JSON.parse(JSON.stringify(DEFAULT_INVENTORY));
-    nextId = 8;
-    saveInventory();renderAll();
-    return `Inventory reset to defaults (${inventory.length} watches).`;
-  }
-
-  return `I can help with: <strong>marking sold</strong> ("Submariner sold for $14,200"), <strong>adding</strong> ("Add a Rolex Explorer for $8,000"), <strong>deleting</strong> ("Delete the IWC"), <strong>checking profits</strong>, <strong>finding slow movers</strong>, <strong>valuations</strong>, and more. Just ask naturally!`;
+  if(lower.includes('delete')||lower.includes('remove')){const t=inventory.find(w=>lower.includes(w.model.toLowerCase())||lower.includes(w.brand.toLowerCase()));if(t){const n=`${t.brand} ${t.model}`;inventory=inventory.filter(w=>w.id!==t.id);saveInv();renderAll();return`Removed <strong>${n}</strong>.`;}return`Couldn't find that watch. Include the brand or model name.`;}
+  if(lower.includes('add')){const pm=lower.match(/\$?([\d,]+)/);const bn=['rolex','patek','audemars','omega','iwc','cartier','breitling','tag heuer','richard mille'];const fb=bn.find(b=>lower.includes(b));if(fb&&pm){const p=parseFloat(pm[1].replace(/,/g,''));const bc=fb.split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');const mm=lower.match(new RegExp(fb+'\\s+([\\w\\s-]+?)(?:\\s+(?:bought|for|at|\\$)|$)','i'));const mo=mm?mm[1].trim().split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' '):'Unknown';const mv=c24Price(bc,p,'Good');inventory.unshift({id:nextId++,brand:bc,model:mo,ref:'-',year:'-',condition:'Good',buyPrice:p,buyDate:new Date().toISOString().split('T')[0],channel:'Private',market:mv,status:'In Stock',soldPrice:null,soldDate:null});saveInv();renderAll();return`Added <strong>${bc} ${mo}</strong> at <strong>${fmt(p)}</strong>. C24: <strong>${fmt(mv)}</strong>.`;}return`Include brand and price. E.g. "Add a Rolex Submariner for $12,500"`;}
+  if(lower.includes('stock')||lower.includes('inventory')||lower.includes('how many'))return`<strong>${k.active} watches</strong> in stock. Value: <strong>${fmt(k.totalMarket)}</strong>. Cost: ${fmt(k.totalCost)}. Unrealized: <strong>+${fmt(k.unrealized)}</strong>.`;
+  if(lower.includes('profit')||lower.includes('earn')||lower.includes('made'))return`Realized: <strong>+${fmt(k.realized)}</strong> (${k.sold} sold). Unrealized: <strong>+${fmt(k.unrealized)}</strong>. Combined: <strong>+${fmt(k.realized+k.unrealized)}</strong>.`;
+  if(lower.includes('slow')||lower.includes('longest')||lower.includes('old')||lower.includes('over 30')){const sorted=[...active].sort((a,b)=>daysSince(b.buyDate)-daysSince(a.buyDate));const slow=sorted.filter(w=>daysSince(w.buyDate)>30);if(slow.length)return`<strong>${slow.length}</strong> held over 30 days: ${slow.map(w=>`<strong>${w.brand} ${w.model}</strong> (${daysSince(w.buyDate)}d)`).join(', ')}.`;return`Slowest: <strong>${sorted[0].brand} ${sorted[0].model}</strong> (${daysSince(sorted[0].buyDate)}d). All under 30 days.`;}
+  if(lower.includes('best')||lower.includes('margin')||lower.includes('highest')){if(lower.includes('avg')||lower.includes('average')){const am=active.length?active.reduce((s,w)=>s+((w.market-w.buyPrice)/w.buyPrice*100),0)/active.length:0;return`Average margin: <strong>${am.toFixed(1)}%</strong> across ${active.length} watches.`;}const best=[...active].sort((a,b)=>(b.market-b.buyPrice)/b.buyPrice-(a.market-a.buyPrice)/a.buyPrice)[0];if(best)return`Best margin: <strong>${best.brand} ${best.model}</strong> at <strong>${pct(best.market,best.buyPrice)}</strong> (+${fmt(best.market-best.buyPrice)}).`;return`No active watches.`;}
+  if(lower.includes('list'))  {const l=inventory.filter(w=>w.status==='Listed');return l.length?`<strong>${l.length}</strong> listed: ${l.map(w=>`${w.brand} ${w.model}`).join(', ')}.`:'None listed.';}
+  if(lower.includes('value')||lower.includes('worth')||lower.includes('price')){const t=active.find(w=>lower.includes(w.model.toLowerCase())||lower.includes(w.brand.toLowerCase()));if(t)return`<strong>${t.brand} ${t.model}</strong> (${t.ref}): Cost ${fmt(t.buyPrice)}, C24: <strong>${fmt(t.market)}</strong>. Unrealized: <strong>${t.market>=t.buyPrice?'+':''}${fmt(t.market-t.buyPrice)}</strong>.`;}
+  if(lower.includes('reset')){inventory=JSON.parse(JSON.stringify(DEFAULT_INV));nextId=8;saveInv();renderAll();return`Reset to defaults (${inventory.length} watches).`;}
+  return`I can: <strong>mark sold</strong>, <strong>add</strong>/<strong>delete</strong> watches, check <strong>profits</strong>, find <strong>slow movers</strong>, and more. Just ask naturally.`;
 }
+function sendAI(msg,panel){if(!msg||!msg.trim())return;addMsg(msg,'user',panel);const input=document.getElementById(`ai-input-${panel}`);if(input)input.value='';setTimeout(()=>{addMsg(aiRespond(msg,panel),'ai',panel);},350);}
 
-function sendAI(msg,panel){
-  if(!msg||!msg.trim())return;
-  addMsg(msg,'user',panel);
-  const input=document.getElementById(`ai-input-${panel}`);if(input)input.value='';
-  setTimeout(()=>{
-    const reply=aiRespond(msg,panel);
-    addMsg(reply,'ai',panel);
-  },400);
-}
+// ── UTILS ──
+function refreshPrices(){showToast('Refreshing...');inventory.filter(w=>w.status!=='Sold').forEach(w=>{w.market=c24Price(w.brand,w.buyPrice,w.condition);});setTimeout(()=>{saveInv();renderAll();showToast('Prices updated');},1000);}
+function exportCSV(){const h='Brand,Model,Ref,Year,Condition,Buy Price,Buy Date,Channel,C24 Value,Status,Sold Price,Sold Date,Days Held,P&L\n';const rows=inventory.map(w=>`${w.brand},${w.model},${w.ref},${w.year},${w.condition},${w.buyPrice},${w.buyDate},${w.channel},${w.market},${w.status},${w.soldPrice||''},${w.soldDate||''},${daysSince(w.buyDate)},${w.status==='Sold'?w.soldPrice-w.buyPrice:w.market-w.buyPrice}`).join('\n');const a=document.createElement('a');a.href='data:text/csv,'+encodeURIComponent(h+rows);a.download='wristdesk-pro.csv';a.click();showToast('CSV exported');}
+function showToast(msg){const t=document.createElement('div');t.className='toast';t.innerHTML=msg;document.getElementById('toast-container').appendChild(t);setTimeout(()=>t.remove(),3500);}
 
-// ── REFRESH PRICES ──
-function refreshPrices(){
-  showToast('Refreshing Chrono24 prices...','...');
-  inventory.filter(w=>w.status!=='Sold').forEach(w=>{
-    w.market=c24Price(w.brand,w.buyPrice,w.condition);
-  });
-  setTimeout(()=>{saveInventory();renderAll();showToast('Prices updated!','OK');},1000);
-}
+const viewTitles={dashboard:'Dashboard',inventory:'Inventory',sold:'Sold Watches',lookup:'Price Lookup',identify:'Watch Identifier',ai:'AI Assistant'};
+const viewBadges={dashboard:'LIVE',inventory:'ALL',sold:'REALIZED',lookup:'CHRONO24',identify:'VISION',ai:'NLP'};
+function switchView(v,btn){document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));document.getElementById('view-'+v).classList.add('active');document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));if(btn)btn.classList.add('active');document.getElementById('page-title').textContent=viewTitles[v];document.getElementById('page-badge').textContent=viewBadges[v];renderAll();}
 
-// ── EXPORT CSV ──
-function exportCSV(){
-  const h='Brand,Model,Ref,Year,Condition,Buy Price,Buy Date,Channel,C24 Value,Status,Sold Price,Sold Date,Days Held,P&L\n';
-  const rows=inventory.map(w=>{
-    const pnl=w.status==='Sold'?(w.soldPrice-w.buyPrice):(w.market-w.buyPrice);
-    return `${w.brand},${w.model},${w.ref},${w.year},${w.condition},${w.buyPrice},${w.buyDate},${w.channel},${w.market},${w.status},${w.soldPrice||''},${w.soldDate||''},${daysSince(w.buyDate)},${pnl}`;
-  }).join('\n');
-  const a=document.createElement('a');a.href='data:text/csv,'+encodeURIComponent(h+rows);
-  a.download='wristdesk-pro-inventory.csv';a.click();
-  showToast('CSV exported!','OK');
-}
+function renderAll(){renderKPIs();renderDashTable();renderChart();renderFullTable();renderSoldTable();lucide.createIcons();}
 
-// ── VIEWS ──
-const viewTitles={dashboard:'Dashboard',inventory:'Inventory',sold:'Sold Watches',lookup:'Price Lookup',identify:'Identify Watch',ai:'AI Assistant'};
-const viewBadges={dashboard:'Live',inventory:'All',sold:'Realized',lookup:'Chrono24',identify:'Vision',ai:'NLP'};
-function switchView(v,btn){
-  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
-  document.getElementById('view-'+v).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
-  if(btn) btn.classList.add('active');
-  document.getElementById('page-title').textContent=viewTitles[v];
-  document.getElementById('page-badge').textContent=viewBadges[v];
-  renderAll();
-}
+document.addEventListener('keydown',e=>{if(e.key==='n'&&(e.metaKey||e.ctrlKey)){e.preventDefault();openAddModal();}if(e.key==='/'&&!e.target.closest('input,textarea')){e.preventDefault();document.getElementById('global-search').focus();}});
 
-// ── TOAST ──
-function showToast(msg,icon){
-  const t=document.createElement('div');
-  t.className='toast toast-success';
-  t.innerHTML=`<span class="toast-icon">${icon||'OK'}</span> ${msg}`;
-  document.getElementById('toast-container').appendChild(t);
-  setTimeout(()=>t.remove(),3500);
-}
-
-// ── THEME ──
-function toggleTheme(){
-  const h=document.documentElement;
-  const current=h.getAttribute('data-theme');
-  h.setAttribute('data-theme',current==='dark'?'light':'dark');
-}
-
-// ── RENDER ALL ──
-function renderAll(){
-  renderKPIs();renderDashTable();renderChart();renderFullTable();renderSoldTable();
-  lucide.createIcons();
-}
-
-// ── KEYBOARD SHORTCUT ──
-document.addEventListener('keydown',e=>{
-  if(e.key==='n' && (e.metaKey||e.ctrlKey)){e.preventDefault();openAddModal();}
-  if(e.key==='/' && !e.target.closest('input,textarea')){e.preventDefault();document.getElementById('global-search').focus();}
-});
-
-// ── INIT ──
 window.addEventListener('DOMContentLoaded',()=>{
   renderAll();
-  addMsg('Hey! Ready to go. You can say things like "Daytona sold for $22,000", "show slow movers", "delete the Speedmaster", or "what\'s my profit?"','ai','dash');
-  addMsg('All commands update your inventory instantly. No forms needed.','ai','dash');
-  addMsg('Full assistant view loaded. Commands, questions, and inventory updates - just type naturally.','ai','full');
-  addMsg('Try: "Add a Rolex Explorer for $8,000", "What\'s my average margin?", or "Delete the IWC".','ai','full');
+  addMsg('Welcome back. Your portfolio is ready. Ask me anything or command naturally.','ai','dash');
+  addMsg('Full assistant view. Try: "Daytona sold for $22,000" or "What\'s my margin?"','ai','full');
   lucide.createIcons();
 });
 </script>
