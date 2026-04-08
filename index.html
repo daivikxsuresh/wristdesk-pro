@@ -1085,7 +1085,7 @@ body::before{
       <div class="card" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
         <div class="card-header">
           <span class="card-title">AI Assistant</span>
-          <span style="display:flex;align-items:center;gap:8px;"><span style="font-size:var(--text-xs);color:var(--gold)">Groq · Llama 3.3</span><button class="icon-btn" title="AI Settings" onclick="openAISettings()" style="width:26px;height:26px"><i data-lucide="settings" style="width:13px;height:13px"></i></button></span>
+          <span style="display:flex;align-items:center;gap:6px;"><span style="font-size:var(--text-xs);color:var(--gold)">Groq · Llama 3.3</span><button class="icon-btn" title="Clear chat" onclick="clearChat('full')" style="width:26px;height:26px"><i data-lucide="trash" style="width:12px;height:12px"></i></button><button class="icon-btn" title="AI Settings" onclick="openAISettings()" style="width:26px;height:26px"><i data-lucide="settings" style="width:13px;height:13px"></i></button></span>
         </div>
         <div class="ai-messages" id="ai-messages-full" style="flex:1;max-height:none;min-height:0;"></div>
         <div class="quick-chips">
@@ -1484,37 +1484,40 @@ function identifyWatch(){
 }
 
 // ── WATCH ALIASES (street names, nicknames, shorthand) ──
-const WATCH_ALIASES={
-  // Tudor
-  'bb58':'Tudor Black Bay Fifty-Eight','bb36':'Tudor Black Bay 36','bb41':'Tudor Black Bay 41','bb pro':'Tudor Black Bay Pro','pelagos':'Tudor Pelagos','bb gmt':'Tudor Black Bay GMT','bb chrono':'Tudor Black Bay Chrono',
-  // Rolex nicknames
-  'pepsi':'Rolex GMT-Master II 126710BLRO','batman':'Rolex GMT-Master II 126710BLNR','batgirl':'Rolex GMT-Master II 126710BLNR Jubilee','coke':'Rolex GMT-Master II 16710 Coke','sprite':'Rolex GMT-Master II 126720VTNR','root beer':'Rolex GMT-Master II 126711CHNR',
-  'hulk':'Rolex Submariner 116610LV','kermit':'Rolex Submariner 126610LV','smurf':'Rolex Submariner 116619LB','starbucks':'Rolex Submariner 126610LV',
-  'panda':'Rolex Daytona 116500LN White','reverse panda':'Rolex Daytona 116500LN Black','paul newman':'Rolex Daytona 6239 Paul Newman','john mayer':'Rolex Daytona 116508 Green',
-  'wimbledon':'Rolex Datejust Wimbledon Dial','palm':'Rolex Datejust Palm Motif',
-  'sky-d':'Rolex Sky-Dweller','skydweller':'Rolex Sky-Dweller',
-  'polar':'Rolex Explorer II 226570 White','steve mcqueen':'Rolex Explorer II 1655',
-  'yachtmaster':'Rolex Yacht-Master','yacht':'Rolex Yacht-Master',
-  // Rolex shorthand
-  'sub':'Rolex Submariner','daytona':'Rolex Daytona','datejust':'Rolex Datejust','dj':'Rolex Datejust','dd':'Rolex Day-Date','day-date':'Rolex Day-Date','gmt':'Rolex GMT-Master II','op':'Rolex Oyster Perpetual','explorer':'Rolex Explorer','milgauss':'Rolex Milgauss',
-  // Patek
-  'nautilus':'Patek Philippe Nautilus','aquanaut':'Patek Philippe Aquanaut','calatrava':'Patek Philippe Calatrava','tiffany nautilus':'Patek Philippe Nautilus 5711/1A-018 Tiffany','green nautilus':'Patek Philippe Nautilus 5711/1A-014',
-  // AP
-  'ro':'Audemars Piguet Royal Oak','royal oak':'Audemars Piguet Royal Oak','roo':'Audemars Piguet Royal Oak Offshore','offshore':'Audemars Piguet Royal Oak Offshore','jumbo':'Audemars Piguet Royal Oak 15202ST Extra-Thin',
-  // Omega
-  'speedy':'Omega Speedmaster','moonwatch':'Omega Speedmaster Moonwatch','seamaster':'Omega Seamaster','planet ocean':'Omega Seamaster Planet Ocean','moonswatch':'Omega x Swatch MoonSwatch','aqua terra':'Omega Seamaster Aqua Terra',
-  // Others
-  'portugieser':'IWC Portugieser','santos':'Cartier Santos','tank':'Cartier Tank','ballon bleu':'Cartier Ballon Bleu','navi':'Breitling Navitimer','navitimer':'Breitling Navitimer','carrera':'Tag Heuer Carrera','monaco':'Tag Heuer Monaco',
-  'reverso':'Jaeger-LeCoultre Reverso','master ultra thin':'Jaeger-LeCoultre Master Ultra Thin',
-  'fifty fathoms':'Blancpain Fifty Fathoms',
-  'rm':'Richard Mille','richard mille':'Richard Mille',
-  'snowflake':'Grand Seiko SBGA211 Snowflake','spring drive':'Grand Seiko Spring Drive',
-  'el primero':'Zenith El Primero','defy':'Zenith Defy',
-};
+// Aliases use word-boundary matching to prevent false positives
+// (e.g. "sub" shouldn't match "submit", "ro" shouldn't match "wrong")
+const WATCH_ALIASES=[
+  // Multi-word aliases first (matched before single-word)
+  ['bb58','Tudor Black Bay Fifty-Eight'],['bb36','Tudor Black Bay 36'],['bb41','Tudor Black Bay 41'],['bb pro','Tudor Black Bay Pro'],['bb gmt','Tudor Black Bay GMT'],['bb chrono','Tudor Black Bay Chrono'],
+  ['reverse panda','Rolex Daytona 116500LN Black'],['paul newman','Rolex Daytona 6239 Paul Newman'],['john mayer','Rolex Daytona 116508 Green'],
+  ['root beer','Rolex GMT-Master II 126711CHNR'],['sky-d','Rolex Sky-Dweller'],['skydweller','Rolex Sky-Dweller'],
+  ['steve mcqueen','Rolex Explorer II 1655'],['day-date','Rolex Day-Date'],
+  ['tiffany nautilus','Patek Philippe Nautilus 5711/1A-018 Tiffany'],['green nautilus','Patek Philippe Nautilus 5711/1A-014'],
+  ['royal oak','Audemars Piguet Royal Oak'],['planet ocean','Omega Seamaster Planet Ocean'],['aqua terra','Omega Seamaster Aqua Terra'],
+  ['master ultra thin','Jaeger-LeCoultre Master Ultra Thin'],['fifty fathoms','Blancpain Fifty Fathoms'],
+  ['ballon bleu','Cartier Ballon Bleu'],['el primero','Zenith El Primero'],['spring drive','Grand Seiko Spring Drive'],
+  ['richard mille','Richard Mille'],
+  // Single-word aliases (use word-boundary regex)
+  ['pepsi','Rolex GMT-Master II 126710BLRO'],['batman','Rolex GMT-Master II 126710BLNR'],['batgirl','Rolex GMT-Master II 126710BLNR Jubilee'],
+  ['coke','Rolex GMT-Master II 16710 Coke'],['sprite','Rolex GMT-Master II 126720VTNR'],
+  ['hulk','Rolex Submariner 116610LV'],['kermit','Rolex Submariner 126610LV'],['smurf','Rolex Submariner 116619LB'],['starbucks','Rolex Submariner 126610LV'],
+  ['panda','Rolex Daytona 116500LN White'],['wimbledon','Rolex Datejust Wimbledon Dial'],['palm','Rolex Datejust Palm Motif'],
+  ['polar','Rolex Explorer II 226570 White'],['yachtmaster','Rolex Yacht-Master'],
+  ['submariner','Rolex Submariner'],['daytona','Rolex Daytona'],['datejust','Rolex Datejust'],['milgauss','Rolex Milgauss'],['explorer','Rolex Explorer'],
+  ['nautilus','Patek Philippe Nautilus'],['aquanaut','Patek Philippe Aquanaut'],['calatrava','Patek Philippe Calatrava'],
+  ['offshore','Audemars Piguet Royal Oak Offshore'],['jumbo','Audemars Piguet Royal Oak 15202ST Extra-Thin'],
+  ['speedy','Omega Speedmaster'],['moonwatch','Omega Speedmaster Moonwatch'],['seamaster','Omega Seamaster'],['moonswatch','Omega x Swatch MoonSwatch'],
+  ['pelagos','Tudor Pelagos'],['portugieser','IWC Portugieser'],['santos','Cartier Santos'],['tank','Cartier Tank'],
+  ['navitimer','Breitling Navitimer'],['carrera','Tag Heuer Carrera'],['monaco','Tag Heuer Monaco'],
+  ['reverso','Jaeger-LeCoultre Reverso'],['snowflake','Grand Seiko SBGA211 Snowflake'],['defy','Zenith Defy'],
+];
 function resolveAlias(input){
   const lower=input.toLowerCase().trim();
-  for(const[alias,full] of Object.entries(WATCH_ALIASES)){
-    if(lower.includes(alias)) return {alias, resolved:full, original:input};
+  // Sort by alias length descending so multi-word matches first
+  for(const[alias,full] of WATCH_ALIASES){
+    // Use word-boundary matching: alias must be a whole word/phrase
+    const re=new RegExp('(?:^|\\s|\\b)'+alias.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?:\\s|$|\\b)','i');
+    if(re.test(lower)) return {alias, resolved:full, original:input};
   }
   return null;
 }
@@ -1531,43 +1534,41 @@ function buildSystemPrompt(){
   const sold=inventory.filter(w=>w.status==='Sold');
   const invSummary=active.map(w=>`- [id:${w.id}] ${w.brand} ${w.model} (${w.ref}): bought ${fmt(w.buyPrice)} on ${w.buyDate}, C24 value ${fmt(w.market)}, status: ${w.status}, ${daysSince(w.buyDate)}d held, condition: ${w.condition}`).join('\n');
   const soldSummary=sold.map(w=>`- ${w.brand} ${w.model} (${w.ref}): bought ${fmt(w.buyPrice)}, sold ${fmt(w.soldPrice)} on ${w.soldDate}, profit: ${fmt(w.soldPrice-w.buyPrice)}`).join('\n');
-  return `You are WristDesk AI, an expert watch inventory assistant for a luxury watch dealer/collector. Deep knowledge of horology, market values, and the watch trade.
+  return `You are WristDesk AI — an expert watch inventory assistant. Talk like a knowledgeable fellow watch dealer. Keep responses SHORT (1-3 sentences max for queries, 1 sentence + cmd for actions).
 
-CURRENT PORTFOLIO:
-- Active watches: ${k.active} | Total market value: ${fmt(k.totalMarket)} | Cost basis: ${fmt(k.totalCost)}
-- Unrealized P&L: ${k.unrealized>=0?'+':''}${fmt(k.unrealized)} | Realized profit: +${fmt(k.realized)} (${k.sold} sold) | Avg hold: ${k.avgDays}d
+The user may speak casually or use voice input — handle typos, slang ("copped", "picked up", "flipped"), shorthand ("12k" = $12,000), and watch nicknames naturally.
 
-ACTIVE INVENTORY:
+PORTFOLIO: ${k.active} active (${fmt(k.totalMarket)} value, ${fmt(k.totalCost)} cost, ${k.unrealized>=0?'+':''}${fmt(k.unrealized)} unrealized) | ${k.sold} sold (+${fmt(k.realized)} realized) | Avg hold: ${k.avgDays}d
+
+INVENTORY:
 ${invSummary||'(empty)'}
+${soldSummary?'SOLD:\n'+soldSummary:''}
 
-SOLD HISTORY:
-${soldSummary||'(none)'}
+NICKNAMES: BB58=Tudor Black Bay 58, Pepsi=GMT BLRO, Batman=GMT BLNR, Hulk=Sub 116610LV, Panda=Daytona white, Speedy=Speedmaster, Nautilus=PP Nautilus, Royal Oak=AP RO. Always resolve to full names.
 
-WATCH NICKNAMES: Users may say "BB58" (Tudor Black Bay 58), "Pepsi" (Rolex GMT-Master II BLRO), "Batman" (GMT BLNR), "Hulk" (Sub 116610LV), "Panda" (Daytona white), "Speedy" (Omega Speedmaster), "RO" (AP Royal Oak), etc. Always resolve these.
+COMMANDS — include ONE at the END of your message ONLY when executing:
+Add: \`\`\`cmd{"action":"add","brand":"Tudor","model":"Black Bay Fifty-Eight","ref":"M79030N","condition":"Good","buyPrice":3800}\`\`\`
+Sell: \`\`\`cmd{"action":"sell","id":ID,"soldPrice":5000}\`\`\`
+Delete: \`\`\`cmd{"action":"delete","id":ID}\`\`\`
+List/unlist: \`\`\`cmd{"action":"list","id":ID}\`\`\`
+Update: \`\`\`cmd{"action":"update","id":ID,"buyPrice":3750}\`\`\`
 
-ACTIONS: When the user wants to modify inventory, include a JSON command at the END of your message in this format:
-\`\`\`cmd{"action":"add","brand":"Tudor","model":"Black Bay Fifty-Eight","ref":"M79030N","year":"2023","condition":"Good","buyPrice":3800,"channel":"Private"}\`\`\`
-\`\`\`cmd{"action":"sell","id":<watch_id>,"soldPrice":5000}\`\`\`
-\`\`\`cmd{"action":"delete","id":<watch_id>}\`\`\`
-\`\`\`cmd{"action":"list","id":<watch_id>}\`\`\`
-\`\`\`cmd{"action":"update","id":<watch_id>,"buyPrice":3750}\`\`\` (can also update: brand, model, ref, year, condition, channel)
-
-CRITICAL RULES FOR CMD BLOCKS:
-- ONLY include a cmd block when you have ALL required info and are READY to execute the action.
-- For "add": you MUST have brand, model, AND buyPrice before including the cmd block. If any is missing, ASK the user first — do NOT include a cmd block yet.
-- NEVER show example or hypothetical cmd blocks. They will be executed immediately.
-- NEVER include a cmd block when asking a follow-up question.
-- One cmd block per message maximum.
-
-Use watch IDs from inventory. Keep responses concise — talk like a fellow watch dealer. Use $ for prices.`;
+RULES:
+1. For "add": MUST have brand+model+buyPrice. If ANY is missing, ask — NO cmd block.
+2. NEVER show hypothetical/example cmd blocks. They execute immediately.
+3. NEVER put a cmd block in a question or clarification.
+4. One cmd block per message max.
+5. Use exact watch IDs from inventory above.
+6. buyPrice must be a realistic number (>$100).`;
 }
 
 function parseAndExecuteCmd(response){
-  const cmdMatch=response.match(/```cmd(\{.*?\})```/s);
-  if(!cmdMatch) return response.replace(/```cmd\{.*?\}```/gs,'').trim();
+  // Match ```cmd{...}``` — strict: must start with {"action"
+  const cmdMatch=response.match(/```cmd(\{"action".*?\})```/s);
+  if(!cmdMatch) return response.replace(/```cmd[^`]*```/gs,'').trim();
   try{
     const cmd=JSON.parse(cmdMatch[1]);
-    const clean=response.replace(/```cmd\{.*?\}```/gs,'').trim();
+    const clean=response.replace(/```cmd[^`]*```/gs,'').trim();
     if(cmd.action==='add'){
       // Dedup: skip if same brand+model was added in the last 30 seconds
       const dup=inventory.find(w=>w.brand.toLowerCase()===cmd.brand.toLowerCase()&&w.model.toLowerCase()===cmd.model.toLowerCase()&&daysSince(w.buyDate)===0);
@@ -1600,7 +1601,7 @@ function parseAndExecuteCmd(response){
       }
     }
     return clean;
-  }catch(e){ return response.replace(/```cmd\{.*?\}```/gs,'').trim(); }
+  }catch(e){ return response.replace(/```cmd[^`]*```/gs,'').trim(); }
 }
 
 async function callGroq(userMsg){
@@ -1617,7 +1618,7 @@ async function callGroq(userMsg){
       body:JSON.stringify({
         model:localStorage.getItem('wristdesk_groq_model')||'llama-3.3-70b-versatile',
         messages:[{role:'system',content:buildSystemPrompt()},...aiHistory],
-        temperature:0.7, max_tokens:500
+        temperature:0.4, max_tokens:300
       })
     });
     if(!res.ok){
@@ -1660,6 +1661,14 @@ async function testGroqKey(){
     else{const e=await res.json().catch(()=>({}));el.textContent='Failed: '+(e.error?.message||res.status);el.style.color='var(--red)';}
   }catch(e){el.textContent='Network error.';el.style.color='var(--red)';}
 }
+function clearChat(panel){
+  const el=document.getElementById(`ai-messages-${panel}`);
+  if(el) el.innerHTML='';
+  aiHistory=[];
+  pendingAdd={active:false,brand:'',model:'',panel:''};
+  pendingSold={active:false,watch:null,panel:''};
+  addMsg('Chat cleared. How can I help?','ai',panel);
+}
 function updateAIStatus(){
   const hasKey=!!getGroqKey();
   const el=document.getElementById('ai-status-dash');
@@ -1667,11 +1676,17 @@ function updateAIStatus(){
 }
 
 // ── AI ──
+function sanitize(str){
+  // Allow <strong>, <em>, <a>, <br> but strip everything else
+  return str.replace(/<(?!\/?(?:strong|em|a |a>|br))[^>]*>/gi,'');
+}
 function addMsg(text,role,panel){
   const el=document.getElementById(`ai-messages-${panel}`);
+  if(!el)return;
   const time=new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'});
   const div=document.createElement('div');div.className=`msg msg-${role}`;
-  div.innerHTML=`<div class="msg-avatar">${role==='user'?'D':'W'}</div><div><div class="msg-bubble">${text}</div><div class="msg-time">${time}</div></div>`;
+  const safeText=role==='ai'?sanitize(text):text.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  div.innerHTML=`<div class="msg-avatar">${role==='user'?'D':'W'}</div><div><div class="msg-bubble">${safeText}</div><div class="msg-time">${time}</div></div>`;
   el.appendChild(div);el.scrollTop=el.scrollHeight;
 }
 // ── AI BRAIN ──
@@ -1732,12 +1747,25 @@ function parsePrice(text){
 }
 function findWatch(text){
   const lower=text.toLowerCase();
-  // Try to match by model first (more specific), then brand
-  return inventory.find(w=>lower.includes(w.model.toLowerCase()))||inventory.find(w=>lower.includes(w.brand.toLowerCase()));
+  // Resolve aliases first
+  const alias=resolveAlias(text);
+  if(alias){
+    const resolved=alias.resolved.toLowerCase();
+    // Match against inventory using the resolved name
+    return inventory.find(w=>resolved.includes(w.model.toLowerCase())&&resolved.includes(w.brand.toLowerCase()))
+      ||inventory.find(w=>resolved.includes(w.model.toLowerCase()))
+      ||inventory.find(w=>resolved.includes(w.brand.toLowerCase()));
+  }
+  // Try word-boundary matching by model first (more specific), then brand
+  return inventory.find(w=>{const m=w.model.toLowerCase();return m.length>2&&new RegExp('\\b'+m.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b').test(lower);})
+    ||inventory.find(w=>{const b=w.brand.toLowerCase();return new RegExp('\\b'+b.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b').test(lower);});
 }
 
 function aiRespond(msg,panel){
-  const lower=msg.toLowerCase(),k=calcKPIs(),active=inventory.filter(w=>w.status!=='Sold'),sold=inventory.filter(w=>w.status==='Sold');
+  // Resolve watch aliases for local AI too
+  const alias=resolveAlias(msg);
+  const resolvedMsg=alias?msg+' '+alias.resolved:msg;
+  const lower=resolvedMsg.toLowerCase(),k=calcKPIs(),active=inventory.filter(w=>w.status!=='Sold'),sold=inventory.filter(w=>w.status==='Sold');
 
   // ── Handle pending follow-ups ──
   if(pendingAdd.active&&pendingAdd.panel===panel){
