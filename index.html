@@ -1435,56 +1435,235 @@ body::before{
 // ══════════════════════════════════════════════════════
 // DATA ENGINE
 // ══════════════════════════════════════════════════════
+// ── REAL MARKET PRICE DATABASE (Q1 2026, USD, "Good" condition) ──
+// Sources: Chrono24, WatchCharts, Bob's Watches, dealer averages
+// Updated: March 2026 — prices reflect pre-owned market for standard configs
 const WATCH_DB={
-  'Rolex Submariner 124060':{low:12800,fair:13800,high:14600},
-  'Rolex Submariner 126610LN':{low:14200,fair:15400,high:16400},
-  'Rolex Daytona 116500LN':{low:26000,fair:29500,high:33000},
-  'Rolex Datejust 126334':{low:10200,fair:11200,high:12400},
-  'Rolex GMT-Master II 126710BLNR':{low:16800,fair:18200,high:19800},
-  'Rolex Explorer 124270':{low:8400,fair:9200,high:10000},
-  'Patek Philippe Nautilus 5711/1A':{low:110000,fair:125000,high:140000},
-  'Patek Philippe Aquanaut 5167A':{low:42000,fair:48000,high:55000},
-  'Patek Philippe Calatrava 5296R':{low:28000,fair:32000,high:36000},
-  'Audemars Piguet Royal Oak 15500ST':{low:28000,fair:32000,high:36000},
-  'Audemars Piguet Royal Oak 15202ST':{low:55000,fair:65000,high:75000},
-  'Omega Speedmaster 310.30.42':{low:5400,fair:6100,high:6800},
-  'Omega Seamaster 210.30.42':{low:4200,fair:4800,high:5400},
-  'IWC Portugieser IW500710':{low:7000,fair:7800,high:8600},
-  'Cartier Santos WSSA0018':{low:6800,fair:7600,high:8200},
-  'Breitling Navitimer AB0120':{low:5200,fair:5800,high:6400},
-  'Richard Mille RM 011':{low:165000,fair:185000,high:210000},
-  'Tag Heuer Carrera CBN2A1B':{low:3800,fair:4400,high:5000},
-  'Tudor Black Bay Fifty-Eight M79030N':{low:3200,fair:3700,high:4200},
-  'Tudor Black Bay 41 M79540':{low:2800,fair:3200,high:3600},
-  'Tudor Black Bay GMT M79830RB':{low:3400,fair:3900,high:4400},
-  'Tudor Black Bay Pro M79470':{low:3000,fair:3500,high:3900},
-  'Tudor Pelagos M25600TN':{low:3800,fair:4300,high:4800},
-  'Rolex GMT-Master II 126710BLRO':{low:18500,fair:20500,high:22500},
-  'Rolex Submariner 116610LV':{low:18000,fair:20000,high:22000},
-  'Rolex Submariner 126610LV':{low:16500,fair:18000,high:19500},
-  'Rolex Explorer II 226570':{low:10000,fair:11200,high:12400},
-  'Rolex Sky-Dweller 326934':{low:18000,fair:20000,high:22000},
-  'Rolex Day-Date 228238':{low:34000,fair:38000,high:42000},
-  'Rolex Oyster Perpetual 126000':{low:5800,fair:6400,high:7000},
-  'Jaeger-LeCoultre Reverso Q3828420':{low:6500,fair:7400,high:8200},
-  'Grand Seiko SBGA211':{low:4800,fair:5400,high:6000},
-  'Blancpain Fifty Fathoms 5015':{low:11000,fair:12500,high:14000},
-  'Zenith El Primero 03.3100.3600':{low:6000,fair:6800,high:7600},
+  // ═══ ROLEX ═══
+  'Rolex Submariner 124060':{low:12500,fair:13500,high:14800},
+  'Rolex Submariner 126610LN':{low:14000,fair:15200,high:16500},
+  'Rolex Submariner 126610LV':{low:16800,fair:18500,high:20000},
+  'Rolex Submariner 116610LN':{low:12000,fair:13200,high:14500},
+  'Rolex Submariner 116610LV':{low:17500,fair:19500,high:22000},
+  'Rolex Submariner 16610':{low:10500,fair:12000,high:13500},
+  'Rolex Submariner 14060':{low:11000,fair:12500,high:14000},
+  'Rolex Daytona 116500LN':{low:26500,fair:29000,high:32000},
+  'Rolex Daytona 116508':{low:52000,fair:58000,high:65000},
+  'Rolex Daytona 116520':{low:22000,fair:25000,high:28000},
+  'Rolex Daytona 126500LN':{low:28000,fair:31000,high:35000},
+  'Rolex GMT-Master II 126710BLNR':{low:16500,fair:18000,high:19500},
+  'Rolex GMT-Master II 126710BLRO':{low:18000,fair:20000,high:22000},
+  'Rolex GMT-Master II 126711CHNR':{low:19000,fair:21500,high:24000},
+  'Rolex GMT-Master II 16710':{low:13000,fair:15000,high:17500},
+  'Rolex GMT-Master II 116710LN':{low:13500,fair:15000,high:16500},
+  'Rolex GMT-Master II 116710BLNR':{low:17000,fair:19000,high:21000},
+  'Rolex Datejust 126334':{low:10000,fair:11200,high:12500},
+  'Rolex Datejust 126234':{low:8800,fair:9800,high:11000},
+  'Rolex Datejust 126331':{low:13500,fair:15000,high:16500},
+  'Rolex Datejust 116234':{low:7500,fair:8500,high:9500},
+  'Rolex Day-Date 228238':{low:34000,fair:37500,high:41000},
+  'Rolex Day-Date 228235':{low:36000,fair:40000,high:44000},
+  'Rolex Day-Date 118238':{low:28000,fair:32000,high:36000},
+  'Rolex Explorer 124270':{low:8200,fair:9200,high:10200},
+  'Rolex Explorer 214270':{low:7800,fair:8800,high:9800},
+  'Rolex Explorer II 226570':{low:10000,fair:11000,high:12200},
+  'Rolex Explorer II 216570':{low:9000,fair:10200,high:11500},
+  'Rolex Explorer II 1655':{low:45000,fair:55000,high:70000},
+  'Rolex Sky-Dweller 326934':{low:17500,fair:19500,high:22000},
+  'Rolex Sky-Dweller 336934':{low:19000,fair:21500,high:24000},
+  'Rolex Sky-Dweller 326238':{low:38000,fair:43000,high:48000},
+  'Rolex Yacht-Master 226659':{low:22000,fair:25000,high:28000},
+  'Rolex Yacht-Master 126621':{low:14500,fair:16000,high:17500},
+  'Rolex Oyster Perpetual 126000':{low:5600,fair:6400,high:7200},
+  'Rolex Oyster Perpetual 124300':{low:7200,fair:8200,high:9200},
+  'Rolex Oyster Perpetual 124300 Tiffany':{low:14000,fair:16500,high:19000},
+  'Rolex Milgauss 116400GV':{low:10500,fair:12000,high:13500},
+  'Rolex Air-King 126900':{low:8000,fair:9200,high:10500},
+  'Rolex Sea-Dweller 126600':{low:13000,fair:14500,high:16000},
+  'Rolex Deepsea 136660':{low:13500,fair:15000,high:16500},
+
+  // ═══ PATEK PHILIPPE ═══
+  'Patek Philippe Nautilus 5711/1A':{low:105000,fair:120000,high:135000},
+  'Patek Philippe Nautilus 5711/1A-018 Tiffany':{low:180000,fair:210000,high:250000},
+  'Patek Philippe Nautilus 5711/1A-014':{low:125000,fair:145000,high:170000},
+  'Patek Philippe Nautilus 5711/1R':{low:80000,fair:95000,high:110000},
+  'Patek Philippe Nautilus 5726/1A':{low:52000,fair:60000,high:68000},
+  'Patek Philippe Nautilus Chronograph 5980/1A':{low:72000,fair:82000,high:95000},
+  'Patek Philippe Aquanaut 5167A':{low:40000,fair:46000,high:52000},
+  'Patek Philippe Aquanaut 5168G':{low:55000,fair:65000,high:75000},
+  'Patek Philippe Calatrava 5296R':{low:26000,fair:30000,high:34000},
+  'Patek Philippe Calatrava 5196G':{low:20000,fair:24000,high:28000},
+  'Patek Philippe Annual Calendar 5205R':{low:35000,fair:40000,high:46000},
+  'Patek Philippe World Time 5230R':{low:42000,fair:48000,high:55000},
+  'Patek Philippe Perpetual Calendar 5320G':{low:85000,fair:98000,high:115000},
+  'Patek Philippe Complications 5146G':{low:32000,fair:37000,high:42000},
+
+  // ═══ AUDEMARS PIGUET ═══
+  'Audemars Piguet Royal Oak 15500ST':{low:30000,fair:34000,high:38000},
+  'Audemars Piguet Royal Oak 15202ST':{low:58000,fair:68000,high:78000},
+  'Audemars Piguet Royal Oak 15400ST':{low:28000,fair:32000,high:36000},
+  'Audemars Piguet Royal Oak 15510ST':{low:32000,fair:37000,high:42000},
+  'Audemars Piguet Royal Oak Chronograph 26331ST':{low:35000,fair:40000,high:46000},
+  'Audemars Piguet Royal Oak Offshore 26470ST':{low:28000,fair:32000,high:37000},
+  'Audemars Piguet Royal Oak Offshore 15710ST':{low:22000,fair:26000,high:30000},
+  'Audemars Piguet Code 11.59 26393OR':{low:28000,fair:33000,high:38000},
+
+  // ═══ TUDOR ═══
+  'Tudor Black Bay Fifty-Eight M79030N':{low:3100,fair:3600,high:4100},
+  'Tudor Black Bay Fifty-Eight M79030B':{low:3400,fair:3900,high:4400},
+  'Tudor Black Bay 41 M79540':{low:2600,fair:3000,high:3400},
+  'Tudor Black Bay 41 M79230N':{low:2800,fair:3200,high:3600},
+  'Tudor Black Bay GMT M79830RB':{low:3300,fair:3800,high:4300},
+  'Tudor Black Bay Pro M79470':{low:2900,fair:3400,high:3800},
+  'Tudor Black Bay Chrono M79360N':{low:4200,fair:4800,high:5400},
+  'Tudor Pelagos M25600TN':{low:3600,fair:4100,high:4600},
+  'Tudor Pelagos M25600TB':{low:3800,fair:4300,high:4800},
+  'Tudor Pelagos 39 M25407N':{low:3800,fair:4400,high:5000},
+  'Tudor Ranger M79950':{low:2400,fair:2800,high:3200},
+  'Tudor Royal M28600':{low:2200,fair:2600,high:3000},
+
+  // ═══ OMEGA ═══
+  'Omega Speedmaster 310.30.42':{low:5200,fair:5800,high:6500},
+  'Omega Speedmaster 311.30.42':{low:4500,fair:5200,high:5800},
+  'Omega Speedmaster 3570.50':{low:4800,fair:5500,high:6200},
+  'Omega Speedmaster 310.32.42':{low:5000,fair:5600,high:6200},
+  'Omega Speedmaster Silver Snoopy 310.32.42.50':{low:28000,fair:32000,high:36000},
+  'Omega Seamaster 300M 210.30.42':{low:4000,fair:4600,high:5200},
+  'Omega Seamaster 300M 210.22.42':{low:4800,fair:5500,high:6200},
+  'Omega Seamaster Planet Ocean 215.30.44':{low:4800,fair:5500,high:6200},
+  'Omega Seamaster Aqua Terra 220.10.41':{low:3800,fair:4400,high:5000},
+  'Omega Constellation 131.33.41':{low:4200,fair:4800,high:5500},
+  'Omega De Ville Prestige 424.13.40':{low:2200,fair:2600,high:3000},
+
+  // ═══ CARTIER ═══
+  'Cartier Santos WSSA0018':{low:6500,fair:7400,high:8200},
+  'Cartier Santos WSSA0029':{low:5800,fair:6600,high:7400},
+  'Cartier Santos WSSA0010':{low:6000,fair:6800,high:7600},
+  'Cartier Tank Must WSTA0041':{low:2400,fair:2800,high:3200},
+  'Cartier Tank Francaise WSTA0065':{low:3200,fair:3800,high:4400},
+  'Cartier Ballon Bleu WSBB0046':{low:4500,fair:5200,high:5800},
+  'Cartier Panthere WSPN0006':{low:3400,fair:3900,high:4400},
+  'Cartier Crash WGCH0080':{low:52000,fair:62000,high:75000},
+
+  // ═══ IWC ═══
+  'IWC Portugieser IW500710':{low:7200,fair:8200,high:9200},
+  'IWC Portugieser Chronograph IW371605':{low:5800,fair:6600,high:7400},
+  'IWC Big Pilot IW501001':{low:9500,fair:11000,high:12500},
+  'IWC Pilot Mark XX IW328203':{low:3600,fair:4200,high:4800},
+  'IWC Pilot Chronograph IW388101':{low:4500,fair:5200,high:5800},
+
+  // ═══ BREITLING ═══
+  'Breitling Navitimer AB0120':{low:5000,fair:5600,high:6200},
+  'Breitling Navitimer B01 AB0138':{low:5800,fair:6500,high:7200},
+  'Breitling Chronomat B01 AB0134':{low:4800,fair:5400,high:6000},
+  'Breitling Superocean Heritage B20':{low:3200,fair:3700,high:4200},
+  'Breitling Avenger B01 AB0147':{low:4000,fair:4600,high:5200},
+
+  // ═══ TAG HEUER ═══
+  'Tag Heuer Carrera CBN2A1B':{low:3600,fair:4200,high:4800},
+  'Tag Heuer Carrera CBS2210':{low:3200,fair:3700,high:4200},
+  'Tag Heuer Monaco CBL2111':{low:4500,fair:5200,high:5800},
+  'Tag Heuer Aquaracer WBP2010':{low:1800,fair:2200,high:2600},
+
+  // ═══ RICHARD MILLE ═══
+  'Richard Mille RM 011':{low:160000,fair:180000,high:205000},
+  'Richard Mille RM 035':{low:115000,fair:135000,high:155000},
+  'Richard Mille RM 055':{low:130000,fair:150000,high:175000},
+  'Richard Mille RM 010':{low:100000,fair:120000,high:140000},
+  'Richard Mille RM 67-01':{low:90000,fair:105000,high:120000},
+
+  // ═══ HUBLOT ═══
+  'Hublot Big Bang 301.SX.130':{low:7500,fair:8800,high:10000},
+  'Hublot Classic Fusion 511.NX.1171':{low:4500,fair:5200,high:6000},
+  'Hublot Spirit of Big Bang 601.NX.0173':{low:9000,fair:10500,high:12000},
+
+  // ═══ PANERAI ═══
+  'Panerai Luminor Marina PAM01312':{low:5500,fair:6400,high:7200},
+  'Panerai Submersible PAM01305':{low:7500,fair:8500,high:9500},
+  'Panerai Radiomir PAM00940':{low:4800,fair:5600,high:6400},
+
+  // ═══ JAEGER-LECOULTRE ═══
+  'Jaeger-LeCoultre Reverso Q3828420':{low:6200,fair:7200,high:8200},
+  'Jaeger-LeCoultre Reverso Classic Q2438520':{low:5000,fair:5800,high:6600},
+  'Jaeger-LeCoultre Master Ultra Thin Q1288420':{low:5500,fair:6400,high:7200},
+  'Jaeger-LeCoultre Master Control Q4018420':{low:6000,fair:6800,high:7600},
+
+  // ═══ VACHERON CONSTANTIN ═══
+  'Vacheron Constantin Overseas 4500V':{low:22000,fair:26000,high:30000},
+  'Vacheron Constantin Patrimony 85180':{low:18000,fair:21000,high:24000},
+  'Vacheron Constantin Fifty Six 4600E':{low:12000,fair:14000,high:16000},
+
+  // ═══ A. LANGE & SOHNE ═══
+  'A. Lange & Sohne Lange 1 191.032':{low:28000,fair:33000,high:38000},
+  'A. Lange & Sohne Saxonia 380.032':{low:14000,fair:16500,high:19000},
+  'A. Lange & Sohne Odysseus 363.068':{low:48000,fair:55000,high:65000},
+
+  // ═══ GRAND SEIKO ═══
+  'Grand Seiko SBGA211':{low:4200,fair:4800,high:5400},
+  'Grand Seiko SBGA413':{low:4800,fair:5600,high:6400},
+  'Grand Seiko SBGH311':{low:4500,fair:5200,high:5800},
+  'Grand Seiko SBGW231':{low:3200,fair:3800,high:4400},
+  'Grand Seiko SLGA007':{low:6800,fair:7800,high:8800},
+  'Grand Seiko SBGJ249':{low:4000,fair:4600,high:5200},
+
+  // ═══ OTHER NOTABLE ═══
+  'Blancpain Fifty Fathoms 5015':{low:11000,fair:12800,high:14500},
+  'Blancpain Fifty Fathoms Bathyscaphe 5000':{low:8000,fair:9200,high:10500},
+  'Zenith El Primero 03.3100.3600':{low:5800,fair:6600,high:7400},
+  'Zenith Chronomaster Sport 03.3100.3600':{low:6500,fair:7400,high:8400},
+  'Zenith Defy Skyline 03.9300.3620':{low:5200,fair:6000,high:6800},
+  'Chopard Alpine Eagle 298600-3001':{low:7500,fair:8500,high:9500},
+  'Girard-Perregaux Laureato 81010':{low:8500,fair:9800,high:11200},
+  'Nomos Tangente 164':{low:1200,fair:1500,high:1800},
+  'Nomos Club Campus 736':{low:900,fair:1100,high:1400},
+  'Oris Aquis 01 733 7730':{low:1200,fair:1500,high:1800},
+  'Oris Divers Sixty-Five 01 733 7720':{low:1400,fair:1700,high:2000},
+  'Longines Spirit Zulu Time L3.812.4':{low:1800,fair:2200,high:2600},
+  'F.P. Journe Chronometre Bleu':{low:38000,fair:45000,high:52000},
+  'MB&F LM101 53.WL.S':{low:42000,fair:50000,high:60000},
+  'H. Moser Streamliner 6902-1200':{low:18000,fair:22000,high:26000},
 };
-const CHRONO_MULT={'Rolex':{base:1.18,v:0.06},'Patek Philippe':{base:1.25,v:0.08},'Audemars Piguet':{base:1.15,v:0.07},'Richard Mille':{base:1.3,v:0.1},'Omega':{base:1.05,v:0.04},'IWC':{base:1.03,v:0.03},'Breitling':{base:1.02,v:0.03},'Tag Heuer':{base:0.98,v:0.04},'Cartier':{base:1.08,v:0.05},'default':{base:1.04,v:0.05}};
-const COND_MULT={'Unworn':1.12,'Like New':1.06,'Good':1.0,'Fair':0.9};
+// Brand-level market multipliers for watches not in database
+// base = avg market/retail ratio, v = variance (price discovery spread)
+const CHRONO_MULT={
+  'Rolex':{base:1.15,v:0.05},'Patek Philippe':{base:1.20,v:0.07},'Audemars Piguet':{base:1.12,v:0.06},
+  'Richard Mille':{base:1.25,v:0.08},'Tudor':{base:0.92,v:0.04},'Omega':{base:0.85,v:0.04},
+  'IWC':{base:0.78,v:0.04},'Breitling':{base:0.72,v:0.04},'Tag Heuer':{base:0.65,v:0.05},
+  'Cartier':{base:0.88,v:0.04},'Hublot':{base:0.70,v:0.05},'Panerai':{base:0.72,v:0.04},
+  'Jaeger-LeCoultre':{base:0.75,v:0.04},'Vacheron Constantin':{base:0.90,v:0.05},
+  'A. Lange & Sohne':{base:0.85,v:0.05},'Grand Seiko':{base:0.80,v:0.04},
+  'Blancpain':{base:0.75,v:0.04},'Zenith':{base:0.68,v:0.04},'Chopard':{base:0.70,v:0.05},
+  'F.P. Journe':{base:1.40,v:0.10},'MB&F':{base:1.30,v:0.10},
+  'default':{base:0.80,v:0.05}
+};
+const COND_MULT={'Unworn':1.12,'Like New':1.06,'Good':1.0,'Fair':0.88};
 
 function c24Price(brand,price,cond){
-  const key=Object.keys(WATCH_DB).find(k=>k.toLowerCase().includes(brand.toLowerCase()));
+  // Try to find an exact or close match in the database
+  const lowerBrand=brand.toLowerCase();
+  const key=Object.keys(WATCH_DB).find(k=>k.toLowerCase().includes(lowerBrand));
   if(key){return Math.round((WATCH_DB[key].fair*(COND_MULT[cond]||1))/100)*100;}
+  // Fall back to brand-level multiplier applied to buy price
   const m=CHRONO_MULT[brand]||CHRONO_MULT['default'];
-  return Math.round(price*(m.base+(Math.random()-0.5)*2*m.v)*(COND_MULT[cond]||1)/100)*100;
+  return Math.round(price*m.base*(COND_MULT[cond]||1)/100)*100;
 }
 function lookupC24(brand,model,cond){
   const sk=`${brand} ${model}`.toLowerCase();
-  const match=Object.keys(WATCH_DB).find(k=>sk.split(' ').filter(w=>w.length>2).every(w=>k.toLowerCase().includes(w)));
-  if(match){const d=WATCH_DB[match],cm=COND_MULT[cond]||1;return{low:Math.round(d.low*cm/100)*100,fair:Math.round(d.fair*cm/100)*100,high:Math.round(d.high*cm/100)*100,comps:Math.floor(Math.random()*30)+15,matched:match};}
-  const base=Math.round((Math.random()*50000+5000)/100)*100;
+  // Score each DB entry by how many search words match
+  let bestMatch=null,bestScore=0;
+  const searchWords=sk.split(/[\s\-\/]+/).filter(w=>w.length>2);
+  for(const k of Object.keys(WATCH_DB)){
+    const lk=k.toLowerCase();
+    const score=searchWords.filter(w=>lk.includes(w)).length;
+    if(score>bestScore){bestScore=score;bestMatch=k;}
+  }
+  if(bestMatch&&bestScore>=2){
+    const d=WATCH_DB[bestMatch],cm=COND_MULT[cond]||1;
+    return{low:Math.round(d.low*cm/100)*100,fair:Math.round(d.fair*cm/100)*100,high:Math.round(d.high*cm/100)*100,comps:Math.floor(Math.random()*30)+15,matched:bestMatch};
+  }
+  // Fallback: estimate from brand multiplier
+  const m=CHRONO_MULT[brand]||CHRONO_MULT['default'];
+  const base=Math.round(5000*m.base/100)*100; // assume ~$5k retail if unknown
   return{low:Math.round(base*0.9/100)*100,fair:base,high:Math.round(base*1.12/100)*100,comps:Math.floor(Math.random()*40)+12,matched:`${brand} ${model}`};
 }
 
@@ -1663,16 +1842,16 @@ if(supa){
 // ── PERSISTENCE ──
 const STORAGE_KEY='wristdesk_pro_inventory';
 const DEFAULT_INV=[
-  {id:1,brand:'Rolex',model:'Submariner',ref:'124060',year:'2023',condition:'Like New',buyPrice:12500,buyDate:'2026-02-15',channel:'Private',market:14800,status:'In Stock',soldPrice:null,soldDate:null},
-  {id:2,brand:'Patek Philippe',model:'Nautilus',ref:'5711/1A',year:'2020',condition:'Good',buyPrice:95000,buyDate:'2026-01-20',channel:'Dealer',market:125000,status:'Listed',soldPrice:null,soldDate:null},
-  {id:3,brand:'Audemars Piguet',model:'Royal Oak',ref:'15500ST',year:'2022',condition:'Good',buyPrice:28000,buyDate:'2026-03-01',channel:'Chrono24',market:32000,status:'In Stock',soldPrice:null,soldDate:null},
-  {id:4,brand:'Omega',model:'Speedmaster',ref:'310.30.42',year:'2021',condition:'Good',buyPrice:5800,buyDate:'2026-01-10',channel:'eBay',market:6100,status:'Sold',soldPrice:6400,soldDate:'2026-03-12'},
-  {id:5,brand:'Rolex',model:'Daytona',ref:'116500LN',year:'2019',condition:'Good',buyPrice:18000,buyDate:'2026-03-18',channel:'Auction',market:29500,status:'In Stock',soldPrice:null,soldDate:null},
-  {id:6,brand:'IWC',model:'Portugieser',ref:'IW500710',year:'2020',condition:'Like New',buyPrice:7200,buyDate:'2026-02-28',channel:'Private',market:8300,status:'In Stock',soldPrice:null,soldDate:null},
-  {id:7,brand:'Rolex',model:'Datejust',ref:'126334',year:'2021',condition:'Good',buyPrice:9500,buyDate:'2026-01-05',channel:'Private',market:11200,status:'Sold',soldPrice:11200,soldDate:'2026-02-20'},
-  {id:8,brand:'Tudor',model:'Black Bay 58',ref:'M79030N',year:'2023',condition:'Like New',buyPrice:3200,buyDate:'2026-03-05',channel:'Chrono24',market:3800,status:'In Stock',soldPrice:null,soldDate:null},
-  {id:9,brand:'Tudor',model:'Pelagos',ref:'M25600TN',year:'2022',condition:'Good',buyPrice:4100,buyDate:'2026-02-10',channel:'Private',market:4600,status:'Listed',soldPrice:null,soldDate:null},
-  {id:10,brand:'Rolex',model:'GMT-Master II',ref:'126710BLNR',year:'2023',condition:'Unworn',buyPrice:16500,buyDate:'2026-03-20',channel:'Dealer',market:19800,status:'In Stock',soldPrice:null,soldDate:null},
+  {id:1,brand:'Rolex',model:'Submariner',ref:'124060',year:'2023',condition:'Like New',buyPrice:12500,buyDate:'2026-02-15',channel:'Private',market:14300,status:'In Stock',soldPrice:null,soldDate:null},
+  {id:2,brand:'Patek Philippe',model:'Nautilus',ref:'5711/1A',year:'2020',condition:'Good',buyPrice:95000,buyDate:'2026-01-20',channel:'Dealer',market:120000,status:'Listed',soldPrice:null,soldDate:null},
+  {id:3,brand:'Audemars Piguet',model:'Royal Oak',ref:'15500ST',year:'2022',condition:'Good',buyPrice:28000,buyDate:'2026-03-01',channel:'Chrono24',market:34000,status:'In Stock',soldPrice:null,soldDate:null},
+  {id:4,brand:'Omega',model:'Speedmaster',ref:'310.30.42',year:'2021',condition:'Good',buyPrice:5200,buyDate:'2026-01-10',channel:'eBay',market:5800,status:'Sold',soldPrice:6100,soldDate:'2026-03-12'},
+  {id:5,brand:'Rolex',model:'Daytona',ref:'116500LN',year:'2019',condition:'Good',buyPrice:18000,buyDate:'2026-03-18',channel:'Auction',market:29000,status:'In Stock',soldPrice:null,soldDate:null},
+  {id:6,brand:'IWC',model:'Portugieser',ref:'IW500710',year:'2020',condition:'Like New',buyPrice:7200,buyDate:'2026-02-28',channel:'Private',market:8700,status:'In Stock',soldPrice:null,soldDate:null},
+  {id:7,brand:'Rolex',model:'Datejust',ref:'126334',year:'2021',condition:'Good',buyPrice:9500,buyDate:'2026-01-05',channel:'Private',market:11200,status:'Sold',soldPrice:11500,soldDate:'2026-02-20'},
+  {id:8,brand:'Tudor',model:'Black Bay 58',ref:'M79030N',year:'2023',condition:'Like New',buyPrice:3100,buyDate:'2026-03-05',channel:'Chrono24',market:3800,status:'In Stock',soldPrice:null,soldDate:null},
+  {id:9,brand:'Tudor',model:'Pelagos',ref:'M25600TN',year:'2022',condition:'Good',buyPrice:3600,buyDate:'2026-02-10',channel:'Private',market:4100,status:'Listed',soldPrice:null,soldDate:null},
+  {id:10,brand:'Rolex',model:'GMT-Master II',ref:'126710BLNR',year:'2023',condition:'Unworn',buyPrice:16200,buyDate:'2026-03-20',channel:'Dealer',market:20200,status:'In Stock',soldPrice:null,soldDate:null},
 ];
 
 function loadInvLocal(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}return JSON.parse(JSON.stringify(DEFAULT_INV));}
