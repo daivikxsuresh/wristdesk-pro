@@ -970,7 +970,10 @@ body::before{
         <div class="card ai-panel" style="height:fit-content;position:sticky;top:0">
           <div class="card-header">
             <span class="card-title">AI Assistant</span>
-            <span style="font-size:var(--text-xs);color:var(--green);display:flex;align-items:center;gap:4px;"><div class="live-dot"></div>Ready</span>
+            <span style="display:flex;align-items:center;gap:8px;">
+              <span id="ai-status-dash" style="font-size:var(--text-xs);color:var(--text-faint);display:flex;align-items:center;gap:4px;">Local AI</span>
+              <button class="icon-btn" title="AI Settings" onclick="openAISettings()" style="width:26px;height:26px"><i data-lucide="settings" style="width:13px;height:13px"></i></button>
+            </span>
           </div>
           <div class="ai-messages" id="ai-messages-dash"></div>
           <div class="quick-chips">
@@ -1074,7 +1077,7 @@ body::before{
       <div class="card" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
         <div class="card-header">
           <span class="card-title">AI Assistant</span>
-          <span style="font-size:var(--text-xs);color:var(--gold)">Natural Language</span>
+          <span style="display:flex;align-items:center;gap:8px;"><span style="font-size:var(--text-xs);color:var(--gold)">Groq · Llama 3.3</span><button class="icon-btn" title="AI Settings" onclick="openAISettings()" style="width:26px;height:26px"><i data-lucide="settings" style="width:13px;height:13px"></i></button></span>
         </div>
         <div class="ai-messages" id="ai-messages-full" style="flex:1;max-height:none;min-height:0;"></div>
         <div class="quick-chips">
@@ -1163,6 +1166,34 @@ body::before{
   </div>
 </div>
 
+<!-- AI SETTINGS MODAL -->
+<div class="modal-overlay" id="ai-settings-modal" onclick="if(event.target===this)closeAISettings()">
+  <div class="modal" style="width:420px">
+    <div class="modal-title">AI Settings</div>
+    <div class="form-group" style="margin-bottom:1rem">
+      <label class="form-label">Groq API Key</label>
+      <input class="form-input" id="groq-key-input" type="password" placeholder="gsk_..." style="font-family:var(--font-mono)">
+      <div style="font-size:var(--text-xs);color:var(--text-faint);margin-top:0.4rem">
+        Free at <a href="https://console.groq.com/keys" target="_blank" style="color:var(--gold)">console.groq.com/keys</a> — 14,400 req/day. Key stays in your browser only.
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:1rem">
+      <label class="form-label">Model</label>
+      <select class="form-input" id="groq-model-select">
+        <option value="llama-3.3-70b-versatile" selected>Llama 3.3 70B (recommended)</option>
+        <option value="llama-3.1-8b-instant">Llama 3.1 8B (faster)</option>
+        <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
+      </select>
+    </div>
+    <div id="ai-connection-status" style="font-size:var(--text-xs);color:var(--text-faint);margin-bottom:1rem"></div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="testGroqKey()">Test Connection</button>
+      <button class="btn-ghost" onclick="closeAISettings()">Cancel</button>
+      <button class="btn-primary" onclick="saveAISettings()">Save</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast-container" id="toast-container"></div>
 
 <script>
@@ -1188,6 +1219,22 @@ const WATCH_DB={
   'Breitling Navitimer AB0120':{low:5200,fair:5800,high:6400},
   'Richard Mille RM 011':{low:165000,fair:185000,high:210000},
   'Tag Heuer Carrera CBN2A1B':{low:3800,fair:4400,high:5000},
+  'Tudor Black Bay Fifty-Eight M79030N':{low:3200,fair:3700,high:4200},
+  'Tudor Black Bay 41 M79540':{low:2800,fair:3200,high:3600},
+  'Tudor Black Bay GMT M79830RB':{low:3400,fair:3900,high:4400},
+  'Tudor Black Bay Pro M79470':{low:3000,fair:3500,high:3900},
+  'Tudor Pelagos M25600TN':{low:3800,fair:4300,high:4800},
+  'Rolex GMT-Master II 126710BLRO':{low:18500,fair:20500,high:22500},
+  'Rolex Submariner 116610LV':{low:18000,fair:20000,high:22000},
+  'Rolex Submariner 126610LV':{low:16500,fair:18000,high:19500},
+  'Rolex Explorer II 226570':{low:10000,fair:11200,high:12400},
+  'Rolex Sky-Dweller 326934':{low:18000,fair:20000,high:22000},
+  'Rolex Day-Date 228238':{low:34000,fair:38000,high:42000},
+  'Rolex Oyster Perpetual 126000':{low:5800,fair:6400,high:7000},
+  'Jaeger-LeCoultre Reverso Q3828420':{low:6500,fair:7400,high:8200},
+  'Grand Seiko SBGA211':{low:4800,fair:5400,high:6000},
+  'Blancpain Fifty Fathoms 5015':{low:11000,fair:12500,high:14000},
+  'Zenith El Primero 03.3100.3600':{low:6000,fair:6800,high:7600},
 };
 const CHRONO_MULT={'Rolex':{base:1.18,v:0.06},'Patek Philippe':{base:1.25,v:0.08},'Audemars Piguet':{base:1.15,v:0.07},'Richard Mille':{base:1.3,v:0.1},'Omega':{base:1.05,v:0.04},'IWC':{base:1.03,v:0.03},'Breitling':{base:1.02,v:0.03},'Tag Heuer':{base:0.98,v:0.04},'Cartier':{base:1.08,v:0.05},'default':{base:1.04,v:0.05}};
 const COND_MULT={'Unworn':1.12,'Like New':1.06,'Good':1.0,'Fair':0.9};
@@ -1428,6 +1475,164 @@ function identifyWatch(){
   },1200);},1000);
 }
 
+// ── WATCH ALIASES (street names, nicknames, shorthand) ──
+const WATCH_ALIASES={
+  // Tudor
+  'bb58':'Tudor Black Bay Fifty-Eight','bb36':'Tudor Black Bay 36','bb41':'Tudor Black Bay 41','bb pro':'Tudor Black Bay Pro','pelagos':'Tudor Pelagos','bb gmt':'Tudor Black Bay GMT','bb chrono':'Tudor Black Bay Chrono',
+  // Rolex nicknames
+  'pepsi':'Rolex GMT-Master II 126710BLRO','batman':'Rolex GMT-Master II 126710BLNR','batgirl':'Rolex GMT-Master II 126710BLNR Jubilee','coke':'Rolex GMT-Master II 16710 Coke','sprite':'Rolex GMT-Master II 126720VTNR','root beer':'Rolex GMT-Master II 126711CHNR',
+  'hulk':'Rolex Submariner 116610LV','kermit':'Rolex Submariner 126610LV','smurf':'Rolex Submariner 116619LB','starbucks':'Rolex Submariner 126610LV',
+  'panda':'Rolex Daytona 116500LN White','reverse panda':'Rolex Daytona 116500LN Black','paul newman':'Rolex Daytona 6239 Paul Newman','john mayer':'Rolex Daytona 116508 Green',
+  'wimbledon':'Rolex Datejust Wimbledon Dial','palm':'Rolex Datejust Palm Motif',
+  'sky-d':'Rolex Sky-Dweller','skydweller':'Rolex Sky-Dweller',
+  'polar':'Rolex Explorer II 226570 White','steve mcqueen':'Rolex Explorer II 1655',
+  'yachtmaster':'Rolex Yacht-Master','yacht':'Rolex Yacht-Master',
+  // Rolex shorthand
+  'sub':'Rolex Submariner','daytona':'Rolex Daytona','datejust':'Rolex Datejust','dj':'Rolex Datejust','dd':'Rolex Day-Date','day-date':'Rolex Day-Date','gmt':'Rolex GMT-Master II','op':'Rolex Oyster Perpetual','explorer':'Rolex Explorer','milgauss':'Rolex Milgauss',
+  // Patek
+  'nautilus':'Patek Philippe Nautilus','aquanaut':'Patek Philippe Aquanaut','calatrava':'Patek Philippe Calatrava','tiffany nautilus':'Patek Philippe Nautilus 5711/1A-018 Tiffany','green nautilus':'Patek Philippe Nautilus 5711/1A-014',
+  // AP
+  'ro':'Audemars Piguet Royal Oak','royal oak':'Audemars Piguet Royal Oak','roo':'Audemars Piguet Royal Oak Offshore','offshore':'Audemars Piguet Royal Oak Offshore','jumbo':'Audemars Piguet Royal Oak 15202ST Extra-Thin',
+  // Omega
+  'speedy':'Omega Speedmaster','moonwatch':'Omega Speedmaster Moonwatch','seamaster':'Omega Seamaster','planet ocean':'Omega Seamaster Planet Ocean','moonswatch':'Omega x Swatch MoonSwatch','aqua terra':'Omega Seamaster Aqua Terra',
+  // Others
+  'portugieser':'IWC Portugieser','santos':'Cartier Santos','tank':'Cartier Tank','ballon bleu':'Cartier Ballon Bleu','navi':'Breitling Navitimer','navitimer':'Breitling Navitimer','carrera':'Tag Heuer Carrera','monaco':'Tag Heuer Monaco',
+  'reverso':'Jaeger-LeCoultre Reverso','master ultra thin':'Jaeger-LeCoultre Master Ultra Thin',
+  'fifty fathoms':'Blancpain Fifty Fathoms',
+  'rm':'Richard Mille','richard mille':'Richard Mille',
+  'snowflake':'Grand Seiko SBGA211 Snowflake','spring drive':'Grand Seiko Spring Drive',
+  'el primero':'Zenith El Primero','defy':'Zenith Defy',
+};
+function resolveAlias(input){
+  const lower=input.toLowerCase().trim();
+  for(const[alias,full] of Object.entries(WATCH_ALIASES)){
+    if(lower.includes(alias)) return {alias, resolved:full, original:input};
+  }
+  return null;
+}
+
+// ── GROQ AI ENGINE ──
+const GROQ_KEY_STORAGE='wristdesk_groq_key';
+let aiHistory=[];
+function getGroqKey(){ return localStorage.getItem(GROQ_KEY_STORAGE)||''; }
+function setGroqKey(k){ localStorage.setItem(GROQ_KEY_STORAGE,k); }
+
+function buildSystemPrompt(){
+  const k=calcKPIs();
+  const active=inventory.filter(w=>w.status!=='Sold');
+  const sold=inventory.filter(w=>w.status==='Sold');
+  const invSummary=active.map(w=>`- [id:${w.id}] ${w.brand} ${w.model} (${w.ref}): bought ${fmt(w.buyPrice)} on ${w.buyDate}, C24 value ${fmt(w.market)}, status: ${w.status}, ${daysSince(w.buyDate)}d held, condition: ${w.condition}`).join('\n');
+  const soldSummary=sold.map(w=>`- ${w.brand} ${w.model} (${w.ref}): bought ${fmt(w.buyPrice)}, sold ${fmt(w.soldPrice)} on ${w.soldDate}, profit: ${fmt(w.soldPrice-w.buyPrice)}`).join('\n');
+  return `You are WristDesk AI, an expert watch inventory assistant for a luxury watch dealer/collector. Deep knowledge of horology, market values, and the watch trade.
+
+CURRENT PORTFOLIO:
+- Active watches: ${k.active} | Total market value: ${fmt(k.totalMarket)} | Cost basis: ${fmt(k.totalCost)}
+- Unrealized P&L: ${k.unrealized>=0?'+':''}${fmt(k.unrealized)} | Realized profit: +${fmt(k.realized)} (${k.sold} sold) | Avg hold: ${k.avgDays}d
+
+ACTIVE INVENTORY:
+${invSummary||'(empty)'}
+
+SOLD HISTORY:
+${soldSummary||'(none)'}
+
+WATCH NICKNAMES: Users may say "BB58" (Tudor Black Bay 58), "Pepsi" (Rolex GMT-Master II BLRO), "Batman" (GMT BLNR), "Hulk" (Sub 116610LV), "Panda" (Daytona white), "Speedy" (Omega Speedmaster), "RO" (AP Royal Oak), etc. Always resolve these.
+
+ACTIONS: When the user wants to modify inventory, include a JSON command at the END of your message in this format:
+\`\`\`cmd{"action":"add","brand":"Tudor","model":"Black Bay Fifty-Eight","ref":"M79030N","year":"2023","condition":"Good","buyPrice":3800,"channel":"Private"}\`\`\`
+\`\`\`cmd{"action":"sell","id":<watch_id>,"soldPrice":5000}\`\`\`
+\`\`\`cmd{"action":"delete","id":<watch_id>}\`\`\`
+\`\`\`cmd{"action":"list","id":<watch_id>}\`\`\`
+
+Use watch IDs from inventory. Keep responses concise — talk like a fellow watch dealer. Use $ for prices.`;
+}
+
+function parseAndExecuteCmd(response){
+  const cmdMatch=response.match(/```cmd(\{.*?\})```/s);
+  if(!cmdMatch) return response.replace(/```cmd\{.*?\}```/gs,'').trim();
+  try{
+    const cmd=JSON.parse(cmdMatch[1]);
+    const clean=response.replace(/```cmd\{.*?\}```/gs,'').trim();
+    if(cmd.action==='add'){
+      const mv=c24Price(cmd.brand,cmd.buyPrice,cmd.condition||'Good');
+      inventory.unshift({id:nextId++,brand:cmd.brand,model:cmd.model,ref:cmd.ref||'-',year:cmd.year||'-',condition:cmd.condition||'Good',buyPrice:cmd.buyPrice,buyDate:new Date().toISOString().split('T')[0],channel:cmd.channel||'Private',market:mv,status:'In Stock',soldPrice:null,soldDate:null});
+      saveInv();renderAll();showToast(`${cmd.brand} ${cmd.model} added`);
+    } else if(cmd.action==='sell'){
+      const w=inventory.find(x=>x.id===cmd.id);
+      if(w){w.status='Sold';w.soldPrice=cmd.soldPrice;w.soldDate=new Date().toISOString().split('T')[0];saveInv();renderAll();showToast(`${w.brand} ${w.model} sold`);}
+    } else if(cmd.action==='delete'){
+      const w=inventory.find(x=>x.id===cmd.id);
+      if(w){const n=`${w.brand} ${w.model}`;inventory=inventory.filter(x=>x.id!==cmd.id);saveInv();renderAll();showToast(`${n} removed`);}
+    } else if(cmd.action==='list'){
+      const w=inventory.find(x=>x.id===cmd.id);
+      if(w){w.status=w.status==='Listed'?'In Stock':'Listed';saveInv();renderAll();showToast(`${w.brand} ${w.model} → ${w.status}`);}
+    }
+    return clean;
+  }catch(e){ return response.replace(/```cmd\{.*?\}```/gs,'').trim(); }
+}
+
+async function callGroq(userMsg){
+  const key=getGroqKey();
+  if(!key) return null; // fall back to local AI
+  const aliasMatch=resolveAlias(userMsg);
+  const contextNote=aliasMatch?`\n[System note: "${aliasMatch.alias}" = "${aliasMatch.resolved}"]`:'';
+  aiHistory.push({role:'user',content:userMsg+contextNote});
+  if(aiHistory.length>20) aiHistory=aiHistory.slice(-20);
+  try{
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({
+        model:localStorage.getItem('wristdesk_groq_model')||'llama-3.3-70b-versatile',
+        messages:[{role:'system',content:buildSystemPrompt()},...aiHistory],
+        temperature:0.7, max_tokens:500
+      })
+    });
+    if(!res.ok){
+      if(res.status===401) return 'Invalid API key. Check your Groq key in settings (⚙️).';
+      const err=await res.json().catch(()=>({}));
+      return `API error (${res.status}): ${err.error?.message||'Unknown'}`;
+    }
+    const data=await res.json();
+    const reply=data.choices?.[0]?.message?.content||'No response.';
+    aiHistory.push({role:'assistant',content:reply});
+    return reply;
+  }catch(e){ return 'Network error — check your connection.'; }
+}
+
+// ── AI SETTINGS ──
+function openAISettings(){
+  document.getElementById('ai-settings-modal').classList.add('open');
+  document.getElementById('groq-key-input').value=getGroqKey();
+  document.getElementById('groq-model-select').value=localStorage.getItem('wristdesk_groq_model')||'llama-3.3-70b-versatile';
+  document.getElementById('ai-connection-status').textContent='';
+}
+function closeAISettings(){document.getElementById('ai-settings-modal').classList.remove('open');}
+function saveAISettings(){
+  setGroqKey(document.getElementById('groq-key-input').value.trim());
+  localStorage.setItem('wristdesk_groq_model',document.getElementById('groq-model-select').value);
+  closeAISettings();updateAIStatus();
+  showToast(getGroqKey()?'Groq API key saved':'API key cleared');
+}
+async function testGroqKey(){
+  const key=document.getElementById('groq-key-input').value.trim();
+  const el=document.getElementById('ai-connection-status');
+  if(!key){el.textContent='Enter a key first.';el.style.color='var(--red)';return;}
+  el.textContent='Testing...';el.style.color='var(--text-faint)';
+  try{
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:'Say "connected" in one word.'}],max_tokens:10})
+    });
+    if(res.ok){el.textContent='Connected! Groq is working.';el.style.color='var(--green)';}
+    else{const e=await res.json().catch(()=>({}));el.textContent='Failed: '+(e.error?.message||res.status);el.style.color='var(--red)';}
+  }catch(e){el.textContent='Network error.';el.style.color='var(--red)';}
+}
+function updateAIStatus(){
+  const hasKey=!!getGroqKey();
+  const el=document.getElementById('ai-status-dash');
+  if(el) el.innerHTML=hasKey?'<div class="live-dot"></div>Groq AI':'<span style="color:var(--text-faint)">Local AI</span>';
+}
+
 // ── AI ──
 function addMsg(text,role,panel){
   const el=document.getElementById(`ai-messages-${panel}`);
@@ -1589,7 +1794,25 @@ function aiRespond(msg,panel){
 
   return`Just tell me what you need. "Add a Tudor Black Bay for $3,200", "Sold the Daytona for $22k", "What's my profit?", or type <strong>help</strong>.`;
 }
-function sendAI(msg,panel){if(!msg||!msg.trim())return;addMsg(msg,'user',panel);const input=document.getElementById(`ai-input-${panel}`);if(input)input.value='';setTimeout(()=>{addMsg(aiRespond(msg,panel),'ai',panel);},350);}
+async function sendAI(msg,panel){
+  if(!msg||!msg.trim())return;
+  addMsg(msg,'user',panel);
+  const input=document.getElementById(`ai-input-${panel}`);
+  if(input)input.value='';
+
+  if(getGroqKey()){
+    // Show typing indicator
+    const el=document.getElementById(`ai-messages-${panel}`);
+    const typing=document.createElement('div');typing.className='msg msg-ai';typing.id='typing-'+panel;
+    typing.innerHTML='<div class="msg-avatar">W</div><div><div class="msg-bubble" style="color:var(--text-faint)">Thinking...</div></div>';
+    el.appendChild(typing);el.scrollTop=el.scrollHeight;
+    const rawReply=await callGroq(msg);
+    const t=document.getElementById('typing-'+panel);if(t)t.remove();
+    if(rawReply!==null){addMsg(parseAndExecuteCmd(rawReply),'ai',panel);return;}
+  }
+  // Fallback: local AI
+  setTimeout(()=>{addMsg(aiRespond(msg,panel),'ai',panel);},350);
+}
 
 // ── UTILS ──
 function refreshPrices(){showToast('Refreshing...');inventory.filter(w=>w.status!=='Sold').forEach(w=>{w.market=c24Price(w.brand,w.buyPrice,w.condition);});setTimeout(()=>{saveInv();renderAll();showToast('Prices updated');},1000);}
@@ -1667,8 +1890,15 @@ function toggleMobileSidebar(){
 
 window.addEventListener('DOMContentLoaded',()=>{
   renderAll();
-  addMsg('Welcome back. Your portfolio is ready. Ask me anything or command naturally.','ai','dash');
-  addMsg('Full assistant view. Try: "Daytona sold for $22,000" or "What\'s my margin?"','ai','full');
+  updateAIStatus();
+  const hasKey=!!getGroqKey();
+  if(hasKey){
+    addMsg('WristDesk AI ready — powered by Groq. I know your full inventory. Ask anything, use watch nicknames (BB58, Pepsi, Batman...), or command naturally.','ai','dash');
+    addMsg('Full AI mode. Try: "Add a BB58 for $3,800", "Sold the Daytona for $22k", "What\'s my margin?" I understand street names.','ai','full');
+  } else {
+    addMsg('Welcome back. Local AI is active — for smarter responses, add a <strong>free Groq API key</strong> via the ⚙️ icon. Or just ask me anything now.','ai','dash');
+    addMsg('Full assistant. Try: "Daytona sold for $22,000" or "What\'s my margin?" For AI-powered chat, set up Groq (⚙️ icon — it\'s free).','ai','full');
+  }
   lucide.createIcons();
 });
 </script>
