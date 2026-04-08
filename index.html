@@ -10,6 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="WristDesk">
 <meta name="theme-color" content="#060911">
 <link rel="manifest" href="manifest.json">
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');</script>
 <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -806,7 +807,7 @@ body::before{
 
   /* Modals — iOS sheet style */
   .modal{
-    width:100%;max-width:100vw;border-radius:16px 16px 0 0;
+    width:100%!important;max-width:100vw!important;border-radius:16px 16px 0 0;
     position:fixed;bottom:0;left:0;right:0;
     transform:translateY(100%);max-height:90vh;overflow-y:auto;
     padding:1.5rem;padding-bottom:calc(1.5rem + env(safe-area-inset-bottom));
@@ -822,8 +823,15 @@ body::before{
 
   /* AI panel in dedicated tab */
   .ai-messages{max-height:none;min-height:150px}
-  .ai-input{font-size:16px}
+  .ai-input{font-size:16px} /* 16px prevents iOS zoom on focus */
   .form-input,.sold-price-input{font-size:16px}
+  /* Keep AI input visible above iOS keyboard */
+  .ai-input-row{position:sticky;bottom:0;background:var(--navy);z-index:5;padding-bottom:env(safe-area-inset-bottom)}
+
+  /* Quick chips horizontal scroll on mobile */
+  .quick-chips{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:0.4rem}
+  .quick-chips::-webkit-scrollbar{display:none}
+  .chip{white-space:nowrap;flex-shrink:0}
 
   /* Action buttons bigger for touch */
   .action-btn{width:36px;height:36px;border-radius:8px}
@@ -1794,24 +1802,28 @@ function aiRespond(msg,panel){
 
   return`Just tell me what you need. "Add a Tudor Black Bay for $3,200", "Sold the Daytona for $22k", "What's my profit?", or type <strong>help</strong>.`;
 }
+let aiSending=false;
 async function sendAI(msg,panel){
-  if(!msg||!msg.trim())return;
+  if(!msg||!msg.trim()||aiSending)return;
+  aiSending=true;
   addMsg(msg,'user',panel);
   const input=document.getElementById(`ai-input-${panel}`);
-  if(input)input.value='';
+  if(input){input.value='';input.blur();} // blur dismisses iOS keyboard
+
+  // Disable send buttons while processing
+  document.querySelectorAll('.send-btn,.chip').forEach(b=>b.style.pointerEvents='none');
 
   if(getGroqKey()){
-    // Show typing indicator
     const el=document.getElementById(`ai-messages-${panel}`);
     const typing=document.createElement('div');typing.className='msg msg-ai';typing.id='typing-'+panel;
     typing.innerHTML='<div class="msg-avatar">W</div><div><div class="msg-bubble" style="color:var(--text-faint)">Thinking...</div></div>';
     el.appendChild(typing);el.scrollTop=el.scrollHeight;
     const rawReply=await callGroq(msg);
     const t=document.getElementById('typing-'+panel);if(t)t.remove();
-    if(rawReply!==null){addMsg(parseAndExecuteCmd(rawReply),'ai',panel);return;}
+    if(rawReply!==null){addMsg(parseAndExecuteCmd(rawReply),'ai',panel);aiSending=false;document.querySelectorAll('.send-btn,.chip').forEach(b=>b.style.pointerEvents='');return;}
   }
   // Fallback: local AI
-  setTimeout(()=>{addMsg(aiRespond(msg,panel),'ai',panel);},350);
+  setTimeout(()=>{addMsg(aiRespond(msg,panel),'ai',panel);aiSending=false;document.querySelectorAll('.send-btn,.chip').forEach(b=>b.style.pointerEvents='');},350);
 }
 
 // ── UTILS ──

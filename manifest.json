@@ -2,21 +2,26 @@
   "name": "WristDesk Pro",
   "short_name": "WristDesk",
   "description": "Watch inventory & analytics dashboard",
+  "id": "/wristdesk-pro/",
   "start_url": "/wristdesk-pro/",
+  "scope": "/wristdesk-pro/",
   "display": "standalone",
   "background_color": "#060911",
   "theme_color": "#060911",
   "orientation": "any",
+  "categories": ["finance", "utilities"],
   "icons": [
     {
       "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
