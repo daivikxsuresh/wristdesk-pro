@@ -57,6 +57,47 @@
   --ease:cubic-bezier(0.16,1,0.3,1);
   --transition:220ms var(--ease);
 }
+/* ── LIGHT THEME ── */
+[data-theme="light"]{
+  --navy-deepest:#f5f3ef;
+  --navy-deep:#faf8f5;
+  --navy:#ffffff;
+  --navy-mid:#f0ede8;
+  --navy-light:#e8e4dd;
+  --navy-lighter:#d9d4cb;
+  --navy-muted:#a09889;
+  --gold:#8b6914;
+  --gold-bright:#a47d1e;
+  --gold-pale:#6b5010;
+  --gold-dim:rgba(139,105,20,0.08);
+  --gold-glow:rgba(139,105,20,0.04);
+  --cream:#2c2820;
+  --cream-muted:#5a5347;
+  --text-primary:#1a1714;
+  --text-secondary:#6b6560;
+  --text-faint:#b0a99e;
+  --green:#1a8a4a;
+  --green-dim:rgba(26,138,74,0.1);
+  --red:#c0392b;
+  --red-dim:rgba(192,57,43,0.1);
+  --amber:#b8860b;
+  --amber-dim:rgba(184,134,11,0.1);
+}
+[data-theme="light"] body::before{opacity:0.015}
+[data-theme="light"] .sidebar{border-right-color:rgba(0,0,0,0.08)}
+[data-theme="light"] .sidebar::after{background:linear-gradient(to bottom,transparent,var(--gold),transparent);opacity:0.1}
+[data-theme="light"] .card{box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+[data-theme="light"] .form-input{background:var(--navy);border-color:var(--navy-lighter);color:var(--text-primary)}
+[data-theme="light"] .form-input:focus{border-color:var(--gold)}
+[data-theme="light"] .inv-table th{background:var(--navy-mid);color:var(--text-secondary)}
+[data-theme="light"] .inv-table td{border-bottom-color:var(--navy-light)}
+[data-theme="light"] .msg-bubble{background:var(--navy-mid)}
+[data-theme="light"] .msg-user .msg-bubble{background:var(--gold-dim)}
+[data-theme="light"] .topbar{border-bottom-color:rgba(0,0,0,0.06)}
+[data-theme="light"] .kpi-card{background:var(--navy);border-color:var(--navy-light)}
+[data-theme="light"] .mobile-tabbar{background:var(--navy-deepest);border-top:1px solid var(--navy-lighter)}
+[data-theme="light"] .chip{background:var(--navy-mid);color:var(--text-secondary)}
+
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 body{
@@ -1244,22 +1285,42 @@ body::before{
 
 <!-- Auth Modal -->
 <div class="modal-overlay" id="auth-modal" onclick="if(event.target===this)closeAuthModal()">
-  <div class="modal" style="width:380px">
-    <div class="modal-title">Welcome to WristDesk Pro</div>
-    <div style="font-size:var(--text-xs);color:var(--text-secondary);margin-bottom:1rem">Sign in to sync your inventory across devices.</div>
+  <div class="modal" style="width:400px">
+    <div class="modal-title" id="auth-modal-title">Welcome to WristDesk Pro</div>
+    <div style="font-size:var(--text-xs);color:var(--text-secondary);margin-bottom:1rem" id="auth-modal-sub">Sign in to sync your inventory across devices.</div>
+    <!-- Sign-up extra fields -->
+    <div id="signup-fields" style="display:none">
+      <div class="form-group" style="margin-bottom:0.8rem">
+        <label class="form-label">Your Name</label>
+        <input class="form-input" id="auth-name" type="text" placeholder="e.g. Daivik">
+      </div>
+      <div class="form-group" style="margin-bottom:0.8rem">
+        <label class="form-label">Theme Preference</label>
+        <div style="display:flex;gap:0.5rem">
+          <button type="button" class="theme-pick active" id="pick-dark" onclick="pickTheme('dark')" style="flex:1;padding:0.6rem;border-radius:8px;border:2px solid var(--gold);background:var(--navy-mid);text-align:center;cursor:pointer">
+            <div style="font-size:16px;margin-bottom:2px">&#127761;</div>
+            <div style="font-size:var(--text-xs);color:var(--text-primary)">Dark</div>
+          </button>
+          <button type="button" class="theme-pick" id="pick-light" onclick="pickTheme('light')" style="flex:1;padding:0.6rem;border-radius:8px;border:2px solid var(--navy-lighter);background:var(--navy-mid);text-align:center;cursor:pointer">
+            <div style="font-size:16px;margin-bottom:2px">&#9728;&#65039;</div>
+            <div style="font-size:var(--text-xs);color:var(--text-primary)">Light</div>
+          </button>
+        </div>
+      </div>
+    </div>
     <div class="form-group" style="margin-bottom:0.8rem">
       <label class="form-label">Email</label>
       <input class="form-input" id="auth-email" type="email" placeholder="you@email.com">
     </div>
     <div class="form-group" style="margin-bottom:0.8rem">
       <label class="form-label">Password</label>
-      <input class="form-input" id="auth-pwd" type="password" placeholder="Min 6 characters" onkeydown="if(event.key==='Enter')handleAuth(false)">
+      <input class="form-input" id="auth-pwd" type="password" placeholder="Min 6 characters" onkeydown="if(event.key==='Enter')handleAuth(document.getElementById('signup-fields').style.display!=='none')">
     </div>
     <div id="auth-error" style="font-size:var(--text-xs);color:var(--red);margin-bottom:0.8rem"></div>
     <div class="modal-footer" style="flex-direction:column;gap:0.5rem">
-      <button class="btn-primary" id="auth-submit-btn" onclick="handleAuth(false)" style="width:100%">Sign In</button>
-      <button class="btn-ghost" onclick="handleAuth(true)" style="width:100%;font-size:var(--text-xs)">Don't have an account? Sign Up</button>
-      <button class="btn-ghost" onclick="handleForgotPwd()" style="font-size:var(--text-xs);color:var(--gold)">Forgot password?</button>
+      <button class="btn-primary" id="auth-submit-btn" onclick="handleAuth(document.getElementById('signup-fields').style.display!=='none')" style="width:100%">Sign In</button>
+      <button class="btn-ghost" id="auth-toggle-btn" onclick="toggleAuthMode()" style="width:100%;font-size:var(--text-xs)">Don't have an account? Sign Up</button>
+      <button class="btn-ghost" id="auth-forgot-btn" onclick="handleForgotPwd()" style="font-size:var(--text-xs);color:var(--gold)">Forgot password?</button>
       <button class="btn-ghost" onclick="closeAuthModal()" style="font-size:var(--text-xs);color:var(--text-faint)">Continue as Guest</button>
     </div>
   </div>
@@ -1336,9 +1397,9 @@ try{
 }catch(e){console.warn('Supabase init failed, running in guest mode:',e);}
 
 // ── AUTH ──
-async function signUp(email,pwd){
+async function signUp(email,pwd,name,theme){
   if(!supa){showToast('Cloud not available — try refreshing');return;}
-  const{data,error}=await supa.auth.signUp({email,password:pwd});
+  const{data,error}=await supa.auth.signUp({email,password:pwd,options:{data:{display_name:name||'',theme:theme||'dark'}}});
   if(error) throw error;
   return data;
 }
@@ -1364,15 +1425,18 @@ function updateAuthUI(){
   const footer=document.getElementById('sidebar-auth');
   if(!footer) return;
   if(currentUser){
-    const email=currentUser.email||'User';
-    const short=email.split('@')[0];
+    const name=getUserName();
+    const initial=getUserInitial();
     footer.innerHTML=`
       <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem">
-        <div style="width:28px;height:28px;border-radius:50%;background:var(--gold-dim);display:flex;align-items:center;justify-content:center;font-size:var(--text-xs);color:var(--gold);font-weight:600">${short[0].toUpperCase()}</div>
-        <span style="font-size:var(--text-xs);color:var(--text-primary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${email}">${short}</span>
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--gold-dim);display:flex;align-items:center;justify-content:center;font-size:var(--text-xs);color:var(--gold);font-weight:600">${initial}</div>
+        <span style="font-size:var(--text-xs);color:var(--text-primary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${currentUser.email}">${name}</span>
       </div>
-      <button onclick="signOut()" style="width:100%;padding:0.4rem;font-size:var(--text-xs);background:var(--navy-light);color:var(--text-secondary);border:1px solid var(--navy-lighter);border-radius:6px;cursor:pointer;font-family:var(--font-body)">Sign Out</button>
-      <div style="font-size:9px;color:var(--green);margin-top:0.4rem;display:flex;align-items:center;gap:4px"><div style="width:6px;height:6px;border-radius:50%;background:var(--green)"></div> Cloud synced</div>`;
+      <div style="display:flex;gap:0.4rem;margin-bottom:0.4rem">
+        <button onclick="toggleThemeUI()" style="flex:1;padding:0.4rem;font-size:var(--text-xs);background:var(--navy-light);color:var(--text-secondary);border:1px solid var(--navy-lighter);border-radius:6px;cursor:pointer;font-family:var(--font-body)" title="Toggle theme">${getTheme()==='light'?'&#127761; Dark':'&#9728;&#65039; Light'}</button>
+        <button onclick="signOut()" style="flex:1;padding:0.4rem;font-size:var(--text-xs);background:var(--navy-light);color:var(--text-secondary);border:1px solid var(--navy-lighter);border-radius:6px;cursor:pointer;font-family:var(--font-body)">Sign Out</button>
+      </div>
+      <div style="font-size:9px;color:var(--green);display:flex;align-items:center;gap:4px"><div style="width:6px;height:6px;border-radius:50%;background:var(--green)"></div> Cloud synced</div>`;
   } else {
     footer.innerHTML=`
       <button onclick="openAuthModal()" style="width:100%;padding:0.5rem;font-size:var(--text-xs);background:linear-gradient(135deg,var(--gold),var(--gold-bright));color:var(--navy-deep);border:none;border-radius:6px;cursor:pointer;font-weight:600;font-family:var(--font-body)">Sign In / Sign Up</button>
@@ -1393,10 +1457,37 @@ async function handleForgotPwd(){
 
 function openAccountMenu(){
   if(!currentUser){openAuthModal();return;}
-  // Simple: just sign out for now (could be expanded to profile page later)
-  if(confirm('Signed in as '+currentUser.email+'\n\nSign out?')) signOut();
+  const name=getUserName();
+  if(confirm('Signed in as '+name+' ('+currentUser.email+')\n\nSign out?')) signOut();
 }
-function openAuthModal(){document.getElementById('auth-modal').classList.add('open');}
+let signupThemePick='dark';
+function pickTheme(t){
+  signupThemePick=t;
+  document.getElementById('pick-dark').style.borderColor=t==='dark'?'var(--gold)':'var(--navy-lighter)';
+  document.getElementById('pick-light').style.borderColor=t==='light'?'var(--gold)':'var(--navy-lighter)';
+}
+function toggleAuthMode(){
+  const fields=document.getElementById('signup-fields');
+  const isSignUp=fields.style.display==='none';
+  fields.style.display=isSignUp?'block':'none';
+  document.getElementById('auth-submit-btn').textContent=isSignUp?'Create Account':'Sign In';
+  document.getElementById('auth-toggle-btn').textContent=isSignUp?'Already have an account? Sign In':'Don\'t have an account? Sign Up';
+  document.getElementById('auth-modal-title').textContent=isSignUp?'Create Your Account':'Welcome Back';
+  document.getElementById('auth-modal-sub').textContent=isSignUp?'Set up your WristDesk Pro account.':'Sign in to sync your inventory across devices.';
+  document.getElementById('auth-forgot-btn').style.display=isSignUp?'none':'block';
+  document.getElementById('auth-error').textContent='';
+}
+function openAuthModal(){
+  document.getElementById('auth-modal').classList.add('open');
+  // Reset to sign-in mode
+  document.getElementById('signup-fields').style.display='none';
+  document.getElementById('auth-submit-btn').textContent='Sign In';
+  document.getElementById('auth-toggle-btn').textContent='Don\'t have an account? Sign Up';
+  document.getElementById('auth-modal-title').textContent='Welcome to WristDesk Pro';
+  document.getElementById('auth-modal-sub').textContent='Sign in to sync your inventory across devices.';
+  document.getElementById('auth-forgot-btn').style.display='block';
+  document.getElementById('auth-error').textContent='';
+}
 function closeAuthModal(){document.getElementById('auth-modal').classList.remove('open');document.getElementById('auth-error').textContent='';}
 
 async function handleAuth(isSignUp){
@@ -1405,12 +1496,17 @@ async function handleAuth(isSignUp){
   const errEl=document.getElementById('auth-error');
   const btn=document.getElementById('auth-submit-btn');
   errEl.textContent='';
+  if(isSignUp){
+    const name=document.getElementById('auth-name').value.trim();
+    if(!name){errEl.textContent='Please enter your name.';return;}
+  }
   if(!email||!pwd){errEl.textContent='Enter email and password.';return;}
   if(pwd.length<6){errEl.textContent='Password must be at least 6 characters.';return;}
   btn.disabled=true;btn.textContent=isSignUp?'Creating account...':'Signing in...';
   try{
     if(isSignUp){
-      await signUp(email,pwd);
+      const name=document.getElementById('auth-name').value.trim();
+      await signUp(email,pwd,name,signupThemePick);
       showToast('Account created! Check your email to confirm, then sign in.');
       closeAuthModal();
     } else {
@@ -1420,7 +1516,7 @@ async function handleAuth(isSignUp){
   }catch(e){
     errEl.textContent=e.message||'Auth failed.';
   }finally{
-    btn.disabled=false;btn.textContent=isSignUp?'Sign Up':'Sign In';
+    btn.disabled=false;btn.textContent=isSignUp?'Create Account':'Sign In';
   }
 }
 
@@ -1431,23 +1527,25 @@ if(supa){
     currentUser=session?.user||null;
     updateAuthUI();
     if(currentUser){
+      applyTheme(getTheme());
       await loadInvCloud();
       await loadSettingsCloud();
       if(event==='SIGNED_IN'&&!wasLoggedIn){
         const isNew=inventory.length===0;
+        const uname=getUserName();
         if(isNew){
-          showToast('Welcome to WristDesk Pro!');
-          // Welcome message in AI panels
+          showToast('Welcome to WristDesk Pro, '+uname+'!');
           setTimeout(()=>{
-            addMsg('Welcome! Your account is ready. Start by adding your first watch — tap the <strong>+ Add Watch</strong> button, or just tell me: "Add a Rolex Submariner bought for $12,500".','ai','dash');
-            addMsg('Welcome to WristDesk Pro! I\'m your AI watch assistant. Try telling me:<br>- "Add a Tudor BB58 for $3,800"<br>- "What\'s a fair price for a Pepsi GMT?"<br>- Upload a photo and I\'ll identify it.','ai','full');
+            addMsg(`Welcome, <strong>${uname}</strong>! Your account is ready. Start by adding your first watch — tap <strong>+ Add Watch</strong>, or tell me: "Add a Rolex Submariner bought for $12,500".`,'ai','dash');
+            addMsg(`Hey ${uname}! I'm your AI watch assistant. Try:<br>- "Add a Tudor BB58 for $3,800"<br>- "What's a fair price for a Pepsi GMT?"<br>- Upload a photo and I'll identify it.`,'ai','full');
           },300);
         } else {
-          showToast('Welcome back — '+inventory.length+' watches synced');
+          showToast('Welcome back, '+uname+' — '+inventory.length+' watches synced');
         }
       }
     } else if(wasLoggedIn){
-      // Logged out — revert to guest sample data
+      // Logged out — revert to guest sample data and dark theme
+      applyTheme('dark');
       inventory=loadInvLocal();
       nextId=Math.max(...inventory.map(w=>w.id),0)+1;
       renderAll();
@@ -2040,9 +2138,38 @@ function sanitize(str){
   // Allow <strong>, <em>, <a>, <br> but strip everything else
   return str.replace(/<(?!\/?(?:strong|em|a |a>|br))[^>]*>/gi,'');
 }
+function getUserName(){
+  if(currentUser?.user_metadata?.display_name) return currentUser.user_metadata.display_name;
+  if(currentUser?.email) return currentUser.email.split('@')[0];
+  return 'Guest';
+}
 function getUserInitial(){
-  if(currentUser&&currentUser.email) return currentUser.email[0].toUpperCase();
-  return 'G'; // Guest
+  const name=getUserName();
+  return name[0].toUpperCase();
+}
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme',theme||'dark');
+  localStorage.setItem('wristdesk_theme',theme||'dark');
+  // Update meta theme-color for mobile
+  const meta=document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.content=theme==='light'?'#faf8f5':'#060911';
+}
+function getTheme(){
+  if(currentUser?.user_metadata?.theme) return currentUser.user_metadata.theme;
+  return localStorage.getItem('wristdesk_theme')||'dark';
+}
+async function toggleThemeUI(){
+  const newTheme=getTheme()==='dark'?'light':'dark';
+  applyTheme(newTheme);
+  // Update user metadata in Supabase
+  if(supa&&currentUser){
+    await supa.auth.updateUser({data:{theme:newTheme}});
+    // Refresh currentUser metadata
+    const{data}=await supa.auth.getUser();
+    if(data?.user) currentUser=data.user;
+  }
+  updateAuthUI();
+  showToast(newTheme==='light'?'Switched to light theme':'Switched to dark theme');
 }
 function addMsg(text,role,panel){
   const el=document.getElementById(`ai-messages-${panel}`);
@@ -2357,6 +2484,7 @@ function toggleMobileSidebar(){
 }
 
 window.addEventListener('DOMContentLoaded',()=>{
+  applyTheme(getTheme());
   renderAll();
   updateAIStatus();
   updateAuthUI();
