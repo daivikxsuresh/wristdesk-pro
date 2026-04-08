@@ -897,9 +897,11 @@ body::before{
 /* Hide mobile elements on desktop */
 .mobile-tabbar{display:none}
 .mobile-menu-btn{display:none}
+.mobile-auth-btn{display:none!important}
 @media(max-width:768px){
   .mobile-tabbar{display:flex}
   .mobile-menu-btn{display:flex}
+  .mobile-auth-btn{display:flex!important}
 }
 </style>
 </head>
@@ -975,6 +977,7 @@ body::before{
       <button class="icon-btn" title="Refresh prices" onclick="refreshPrices()"><i data-lucide="refresh-cw"></i></button>
       <button class="icon-btn" title="Export CSV" onclick="exportCSV()"><i data-lucide="download"></i></button>
       <button class="add-btn" onclick="openAddModal()"><i data-lucide="plus" style="width:14px;height:14px;"></i> Add Watch</button>
+      <button class="icon-btn mobile-auth-btn" id="mobile-auth-btn" title="Account" onclick="currentUser?openAccountMenu():openAuthModal()" style="position:relative"><i data-lucide="user" style="width:16px;height:16px"></i><span id="mobile-auth-dot" style="display:none;position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--green)"></span></button>
     </div>
   </header>
 
@@ -1347,14 +1350,17 @@ async function signIn(email,pwd){
 }
 async function signOut(){
   if(supa) await supa.auth.signOut();
-  currentUser=null;
-  inventory=loadInvLocal();
-  nextId=Math.max(...inventory.map(w=>w.id),0)+1;
-  renderAll();updateAuthUI();
-  showToast('Signed out — using local data');
+  // Auth state listener handles the rest (revert to guest data, update UI)
+  showToast('Signed out — using guest data');
 }
 
 function updateAuthUI(){
+  // Mobile auth indicator
+  const dot=document.getElementById('mobile-auth-dot');
+  if(dot) dot.style.display=currentUser?'block':'none';
+  // Page badge
+  const badge=document.getElementById('page-badge');
+  if(badge){badge.textContent=currentUser?'SYNCED':'GUEST';badge.style.background=currentUser?'var(--green-dim)':'var(--gold-dim)';badge.style.color=currentUser?'var(--green)':'var(--gold)';}
   const footer=document.getElementById('sidebar-auth');
   if(!footer) return;
   if(currentUser){
@@ -1385,6 +1391,11 @@ async function handleForgotPwd(){
   }catch(e){errEl.textContent=e.message||'Failed to send reset email.';errEl.style.color='var(--red)';}
 }
 
+function openAccountMenu(){
+  if(!currentUser){openAuthModal();return;}
+  // Simple: just sign out for now (could be expanded to profile page later)
+  if(confirm('Signed in as '+currentUser.email+'\n\nSign out?')) signOut();
+}
 function openAuthModal(){document.getElementById('auth-modal').classList.add('open');}
 function closeAuthModal(){document.getElementById('auth-modal').classList.remove('open');document.getElementById('auth-error').textContent='';}
 
@@ -1416,12 +1427,30 @@ async function handleAuth(isSignUp){
 // Listen for auth state changes (only if Supabase loaded)
 if(supa){
   supa.auth.onAuthStateChange(async(event,session)=>{
+    const wasLoggedIn=!!currentUser;
     currentUser=session?.user||null;
     updateAuthUI();
     if(currentUser){
       await loadInvCloud();
       await loadSettingsCloud();
-      showToast('Signed in — inventory synced from cloud');
+      if(event==='SIGNED_IN'&&!wasLoggedIn){
+        const isNew=inventory.length===0;
+        if(isNew){
+          showToast('Welcome to WristDesk Pro!');
+          // Welcome message in AI panels
+          setTimeout(()=>{
+            addMsg('Welcome! Your account is ready. Start by adding your first watch — tap the <strong>+ Add Watch</strong> button, or just tell me: "Add a Rolex Submariner bought for $12,500".','ai','dash');
+            addMsg('Welcome to WristDesk Pro! I\'m your AI watch assistant. Try telling me:<br>- "Add a Tudor BB58 for $3,800"<br>- "What\'s a fair price for a Pepsi GMT?"<br>- Upload a photo and I\'ll identify it.','ai','full');
+          },300);
+        } else {
+          showToast('Welcome back — '+inventory.length+' watches synced');
+        }
+      }
+    } else if(wasLoggedIn){
+      // Logged out — revert to guest sample data
+      inventory=loadInvLocal();
+      nextId=Math.max(...inventory.map(w=>w.id),0)+1;
+      renderAll();
     }
   });
 }
@@ -1456,35 +1485,13 @@ async function loadInvCloud(){
         soldPrice:w.sold_price, soldDate:w.sold_date, supaId:w.id
       }));
     } else {
-      // First login — push local data to cloud
-      await pushLocalToCloud();
+      // New user — start with empty inventory
+      inventory=[];
     }
     nextId=Math.max(...inventory.map(w=>w.id),0)+1;
     try{localStorage.setItem(STORAGE_KEY,JSON.stringify(inventory));}catch(e){}
     renderAll();
   }catch(e){console.warn('Cloud load failed, using local:',e);}
-}
-
-async function pushLocalToCloud(){
-  if(!currentUser||!supa) return;
-  const rows=inventory.map(w=>({
-    user_id:currentUser.id, brand:w.brand, model:w.model, ref_number:w.ref,
-    year:w.year, condition:w.condition, buy_price:w.buyPrice, buy_date:w.buyDate,
-    channel:w.channel, market_price:w.market, status:w.status,
-    sold_price:w.soldPrice, sold_date:w.soldDate
-  }));
-  if(rows.length>0){
-    const{data,error}=await supa.from('watches').insert(rows).select();
-    if(!error&&data){
-      inventory=data.map(w=>({
-        id:w.id, brand:w.brand, model:w.model, ref:w.ref_number||'', year:w.year||'',
-        condition:w.condition||'Good', buyPrice:w.buy_price, buyDate:w.buy_date||'',
-        channel:w.channel||'', market:w.market_price||0, status:w.status||'In Stock',
-        soldPrice:w.sold_price, soldDate:w.sold_date, supaId:w.id
-      }));
-      nextId=Math.max(...inventory.map(w=>w.id),0)+1;
-    }
-  }
 }
 
 function saveInv(){
@@ -1570,9 +1577,18 @@ function watchRow(w,full=false){
   return`<tr><td><div class="watch-name">${w.brand} ${w.model}</div>${full?`<div class="watch-ref">${w.ref}</div>`:''}</td>${full?`<td class="watch-ref mono">${w.ref}</td><td style="color:var(--text-secondary)">${w.condition}</td>`:''}<td class="price-cell">${fmt(w.buyPrice)}</td><td class="market-cell">${w.status==='Sold'?fmt(w.soldPrice||0):fmt(w.market)}</td><td class="${cls}">${pnl>=0?'+':''}${fmt(pnl)} <span style="color:var(--text-faint);font-size:10px">(${pct(w.status==='Sold'?(w.soldPrice||0):w.market,w.buyPrice)})</span></td><td>${daysBadge(days)}</td><td>${statusBadge(w.status)}</td><td>${actions}</td></tr>`;
 }
 function filterBySearch(list){if(!searchQuery)return list;const q=searchQuery.toLowerCase();return list.filter(w=>w.brand.toLowerCase().includes(q)||w.model.toLowerCase().includes(q)||w.ref.toLowerCase().includes(q)||w.channel.toLowerCase().includes(q));}
+function emptyState(icon,title,sub,action){
+  return`<div style="text-align:center;padding:2.5rem 1rem;color:var(--text-faint)"><i data-lucide="${icon}" style="width:36px;height:36px;margin-bottom:0.75rem;opacity:0.4"></i><div style="font-size:var(--text-sm);color:var(--text-secondary);margin-bottom:0.3rem">${title}</div><div style="font-size:var(--text-xs);margin-bottom:1rem">${sub}</div>${action?`<button class="btn-primary" onclick="${action}" style="font-size:var(--text-xs)">${title.includes('Sign')?'Sign In':'+ Add Your First Watch'}</button>`:''}</div>`;
+}
 function renderDashTable(){
   const a=filterBySearch(inventory.filter(w=>w.status!=='Sold')).slice(0,8);
-  document.getElementById('dash-table-body').innerHTML=a.map(w=>watchRow(w)).join('');
+  const tbody=document.getElementById('dash-table-body');
+  const cards=document.getElementById('mobile-watch-cards');
+  if(a.length===0){
+    tbody.innerHTML=`<tr><td colspan="7">${emptyState('watch','No watches yet',currentUser?'Add your first watch to start tracking your portfolio.':'Sign in to sync your collection, or add watches as a guest.','openAddModal()')}</td></tr>`;
+  } else {
+    tbody.innerHTML=a.map(w=>watchRow(w)).join('');
+  }
   document.getElementById('inv-count-label').textContent=`${a.length} watches`;
   lucide.createIcons();
 }
@@ -1582,7 +1598,11 @@ function renderFullTable(){
   if(sf!=='all')rows=rows.filter(w=>w.status===sf);
   if(bf!=='all')rows=rows.filter(w=>w.brand===bf);
   rows=filterBySearch(rows);
-  document.getElementById('full-table-body').innerHTML=rows.map(w=>watchRow(w,true)).join('');
+  if(rows.length===0){
+    document.getElementById('full-table-body').innerHTML=`<tr><td colspan="9">${emptyState('package','No watches found',inventory.length===0?'Your collection is empty. Add your first watch!':'No watches match your current filters.','openAddModal()')}</td></tr>`;
+  } else {
+    document.getElementById('full-table-body').innerHTML=rows.map(w=>watchRow(w,true)).join('');
+  }
   const active=inventory.filter(w=>w.status!=='Sold');
   document.getElementById('total-inv-value').textContent=fmt(active.reduce((s,w)=>s+w.market,0));
   document.getElementById('total-cost-basis').textContent=fmt(active.reduce((s,w)=>s+w.buyPrice,0));
@@ -1605,7 +1625,11 @@ function renderSoldTable(){
     <div class="kpi-card"><div class="kpi-label">Total Realized</div><div class="kpi-value profit-pos">+${fmt(tr)}</div></div>
     <div class="kpi-card"><div class="kpi-label">Avg Margin</div><div class="kpi-value delta-up">${am.toFixed(1)}%</div></div>
     <div class="kpi-card"><div class="kpi-label">Avg Hold</div><div class="kpi-value">${ah}d</div></div>`;
-  document.getElementById('sold-table-body').innerHTML=sold.map(w=>{const pnl=w.soldPrice-w.buyPrice;return`<tr><td><div class="watch-name">${w.brand} ${w.model}</div></td><td class="watch-ref mono">${w.ref}</td><td class="price-cell">${fmt(w.buyPrice)}</td><td class="price-cell">${fmt(w.soldPrice)}</td><td class="${pnl>=0?'profit-pos':'profit-neg'}">${pnl>=0?'+':''}${fmt(pnl)}</td><td>${daysBadge(daysSince(w.buyDate))}</td><td class="${pnl>=0?'profit-pos':'profit-neg'}">${pct(w.soldPrice,w.buyPrice)}</td></tr>`;}).join('');
+  if(sold.length===0){
+    document.getElementById('sold-table-body').innerHTML=`<tr><td colspan="7">${emptyState('check-circle-2','No sold watches yet','Mark a watch as sold to start tracking your realized profits.','')}</td></tr>`;
+  } else {
+    document.getElementById('sold-table-body').innerHTML=sold.map(w=>{const pnl=w.soldPrice-w.buyPrice;return`<tr><td><div class="watch-name">${w.brand} ${w.model}</div></td><td class="watch-ref mono">${w.ref}</td><td class="price-cell">${fmt(w.buyPrice)}</td><td class="price-cell">${fmt(w.soldPrice)}</td><td class="${pnl>=0?'profit-pos':'profit-neg'}">${pnl>=0?'+':''}${fmt(pnl)}</td><td>${daysBadge(daysSince(w.buyDate))}</td><td class="${pnl>=0?'profit-pos':'profit-neg'}">${pct(w.soldPrice,w.buyPrice)}</td></tr>`;}).join('');
+  }
 }
 
 // ── CHART ──
@@ -1936,7 +1960,7 @@ function addImgMsg(dataUrl,text,panel){
   const time=new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'});
   const div=document.createElement('div');div.className='msg msg-user';
   const safeText=text?text.replace(/</g,'&lt;').replace(/>/g,'&gt;'):'Identify this watch';
-  div.innerHTML=`<div class="msg-avatar">D</div><div><div class="ai-img-bubble"><img src="${dataUrl}"></div><div class="msg-bubble">${safeText}</div><div class="msg-time">${time}</div></div>`;
+  div.innerHTML=`<div class="msg-avatar">${getUserInitial()}</div><div><div class="ai-img-bubble"><img src="${dataUrl}"></div><div class="msg-bubble">${safeText}</div><div class="msg-time">${time}</div></div>`;
   el.appendChild(div);el.scrollTop=el.scrollHeight;
 }
 
@@ -2016,13 +2040,18 @@ function sanitize(str){
   // Allow <strong>, <em>, <a>, <br> but strip everything else
   return str.replace(/<(?!\/?(?:strong|em|a |a>|br))[^>]*>/gi,'');
 }
+function getUserInitial(){
+  if(currentUser&&currentUser.email) return currentUser.email[0].toUpperCase();
+  return 'G'; // Guest
+}
 function addMsg(text,role,panel){
   const el=document.getElementById(`ai-messages-${panel}`);
   if(!el)return;
   const time=new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'});
   const div=document.createElement('div');div.className=`msg msg-${role}`;
   const safeText=role==='ai'?sanitize(text):text.replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  div.innerHTML=`<div class="msg-avatar">${role==='user'?'D':'W'}</div><div><div class="msg-bubble">${safeText}</div><div class="msg-time">${time}</div></div>`;
+  const avatar=role==='user'?getUserInitial():'W';
+  div.innerHTML=`<div class="msg-avatar">${avatar}</div><div><div class="msg-bubble">${safeText}</div><div class="msg-time">${time}</div></div>`;
   el.appendChild(div);el.scrollTop=el.scrollHeight;
 }
 // ── AI BRAIN ──
@@ -2332,11 +2361,12 @@ window.addEventListener('DOMContentLoaded',()=>{
   updateAIStatus();
   updateAuthUI();
   const hasKey=!!getGroqKey();
+  const greeting=currentUser?'Welcome back!':'Welcome to WristDesk Pro!';
   if(hasKey){
-    addMsg('WristDesk AI ready — powered by Groq. I know your full inventory. Ask anything, use watch nicknames (BB58, Pepsi, Batman...), or command naturally.','ai','dash');
+    addMsg(`${greeting} AI is powered by Groq. I know your full inventory. Ask anything, use watch nicknames (BB58, Pepsi, Batman...), or command naturally.`,'ai','dash');
     addMsg('Full AI mode. Try: "Add a BB58 for $3,800", "Sold the Daytona for $22k", "What\'s my margin?" I understand street names.','ai','full');
   } else {
-    addMsg('Welcome back. Local AI is active — for smarter responses, add a <strong>free Groq API key</strong> via the ⚙️ icon. Or just ask me anything now.','ai','dash');
+    addMsg(`${greeting} Local AI is active — for smarter responses, add a <strong>free Groq API key</strong> via the ⚙️ icon. Or just ask me anything now.`,'ai','dash');
     addMsg('Full assistant. Try: "Daytona sold for $22,000" or "What\'s my margin?" For AI-powered chat, set up Groq (⚙️ icon — it\'s free).','ai','full');
   }
   lucide.createIcons();

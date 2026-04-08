@@ -1,4 +1,4 @@
-const CACHE='wristdesk-v2';
+const CACHE='wristdesk-v3';
 const ASSETS=['/','/wristdesk-pro/','/wristdesk-pro/index.html','/wristdesk-pro/manifest.json','/wristdesk-pro/icon-192.png','/wristdesk-pro/icon-512.png'];
 
 self.addEventListener('install',e=>{
