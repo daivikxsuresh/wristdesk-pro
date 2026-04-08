@@ -1436,24 +1436,158 @@ function addMsg(text,role,panel){
   div.innerHTML=`<div class="msg-avatar">${role==='user'?'D':'W'}</div><div><div class="msg-bubble">${text}</div><div class="msg-time">${time}</div></div>`;
   el.appendChild(div);el.scrollTop=el.scrollHeight;
 }
+// ── AI BRAIN ──
+// Known brands for smart parsing — covers all major luxury houses
+const BRANDS=['rolex','tudor','patek philippe','patek','audemars piguet','audemars','ap','omega','iwc','cartier','breitling','tag heuer','tagheuer','richard mille','hublot','zenith','panerai','jaeger-lecoultre','jaeger lecoultre','jlc','vacheron constantin','vacheron','a. lange','lange','grand seiko','seiko','girard-perregaux','girard perregaux','blancpain','chopard','bell & ross','bell ross','nomos','oris','longines','tissot','hamilton','montblanc','bulgari','bvlgari','ulysse nardin','piaget','harry winston','franck muller','mb&f','f.p. journe','fp journe','jacob & co','jacob and co'];
+// Normalize brand display names
+const BRAND_MAP={'patek':'Patek Philippe','audemars':'Audemars Piguet','ap':'Audemars Piguet','tagheuer':'Tag Heuer','tag heuer':'Tag Heuer','jlc':'Jaeger-LeCoultre','jaeger lecoultre':'Jaeger-LeCoultre','jaeger-lecoultre':'Jaeger-LeCoultre','vacheron':'Vacheron Constantin','a. lange':'A. Lange & Sohne','lange':'A. Lange & Sohne','grand seiko':'Grand Seiko','girard perregaux':'Girard-Perregaux','girard-perregaux':'Girard-Perregaux','bell ross':'Bell & Ross','bell & ross':'Bell & Ross','bulgari':'Bvlgari','bvlgari':'Bvlgari','fp journe':'F.P. Journe','f.p. journe':'F.P. Journe','jacob and co':'Jacob & Co','jacob & co':'Jacob & Co','mb&f':'MB&F','ulysse nardin':'Ulysse Nardin','harry winston':'Harry Winston','franck muller':'Franck Muller','richard mille':'Richard Mille','patek philippe':'Patek Philippe','audemars piguet':'Audemars Piguet','vacheron constantin':'Vacheron Constantin'};
+
+// Pending action state for multi-turn conversations
+let pendingAdd={active:false,brand:'',model:'',panel:''};
+let pendingSold={active:false,watch:null,panel:''};
+
+function parseBrand(text){
+  const lower=text.toLowerCase();
+  // Sort brands by length descending so "patek philippe" matches before "patek"
+  const sorted=[...BRANDS].sort((a,b)=>b.length-a.length);
+  for(const b of sorted){if(lower.includes(b)){return BRAND_MAP[b]||b.split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');}}
+  return null;
+}
+function parseModel(text,brand){
+  const lower=text.toLowerCase();
+  // Remove common filler words and the brand name to isolate the model
+  const brandWords=brand.toLowerCase().split(/\s+/);
+  let cleaned=lower;
+  // Remove action words
+  ['add','added','bought','buy','buying','got','picked up','copped','just got','i want to add','want to add','can you add','please add','add a','add the'].forEach(w=>{cleaned=cleaned.replace(w,'');});
+  // Remove brand words
+  brandWords.forEach(w=>{cleaned=cleaned.replace(new RegExp('\\b'+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','g'),'');});
+  // Remove price patterns
+  cleaned=cleaned.replace(/(?:for|at|bought|paid|price|cost)?\s*\$?\s*[\d,]+(?:\.\d{2})?/g,'');
+  // Remove filler
+  cleaned=cleaned.replace(/\b(a|an|the|my|new|for|at|in|on|with|to|it|is|was|i)\b/g,'');
+  // Clean up
+  cleaned=cleaned.replace(/[^\w\s\-\.]/g,'').replace(/\s+/g,' ').trim();
+  return cleaned?cleaned.split(' ').map(w=>w[0]?w[0].toUpperCase()+w.slice(1):w).join(' '):'';
+}
+function parsePrice(text){
+  // Match prices like $12,500 or 12500 or 12,500 or $12.5k or 12.5k
+  const kMatch=text.match(/\$?\s*([\d,.]+)\s*k\b/i);
+  if(kMatch)return Math.round(parseFloat(kMatch[1].replace(/,/g,''))*1000);
+  const m=text.match(/\$?\s*([\d,]+(?:\.\d{1,2})?)/);
+  if(m){const v=parseFloat(m[1].replace(/,/g,''));if(v>50)return v;}// ignore tiny numbers
+  return null;
+}
+function findWatch(text){
+  const lower=text.toLowerCase();
+  // Try to match by model first (more specific), then brand
+  return inventory.find(w=>lower.includes(w.model.toLowerCase()))||inventory.find(w=>lower.includes(w.brand.toLowerCase()));
+}
+
 function aiRespond(msg,panel){
   const lower=msg.toLowerCase(),k=calcKPIs(),active=inventory.filter(w=>w.status!=='Sold'),sold=inventory.filter(w=>w.status==='Sold');
-  const soldMatch=lower.match(/(?:sold?|mark.+sold?)[^\d]*\$?([\d,]+)/);
-  const brandMatch=active.find(w=>lower.includes(w.model.toLowerCase())||lower.includes(w.brand.toLowerCase()));
-  if((lower.includes('sold')||lower.includes('sell'))&&soldMatch&&brandMatch){
-    const price=parseFloat(soldMatch[1].replace(/,/g,''));brandMatch.status='Sold';brandMatch.soldPrice=price;brandMatch.soldDate=new Date().toISOString().split('T')[0];saveInv();renderAll();
-    return`Done. <strong>${brandMatch.brand} ${brandMatch.model}</strong> sold for <strong>${fmt(price)}</strong>. P&L: <strong>${price>=brandMatch.buyPrice?'+':''}${fmt(price-brandMatch.buyPrice)}</strong> (${pct(price,brandMatch.buyPrice)}).`;
+
+  // ── Handle pending follow-ups ──
+  if(pendingAdd.active&&pendingAdd.panel===panel){
+    const price=parsePrice(msg);
+    if(price){
+      const brand=pendingAdd.brand,model=pendingAdd.model;
+      const mv=c24Price(brand,price,'Good');
+      inventory.unshift({id:nextId++,brand,model,ref:'-',year:'-',condition:'Good',buyPrice:price,buyDate:new Date().toISOString().split('T')[0],channel:'Private',market:mv,status:'In Stock',soldPrice:null,soldDate:null});
+      saveInv();renderAll();pendingAdd={active:false,brand:'',model:'',panel:''};
+      return`Added <strong>${brand} ${model}</strong> at <strong>${fmt(price)}</strong>. C24 estimate: <strong>${fmt(mv)}</strong>.`;
+    }
+    // Not a price — cancel pending
+    pendingAdd={active:false,brand:'',model:'',panel:''};
   }
-  if(lower.includes('delete')||lower.includes('remove')){const t=inventory.find(w=>lower.includes(w.model.toLowerCase())||lower.includes(w.brand.toLowerCase()));if(t){const n=`${t.brand} ${t.model}`;inventory=inventory.filter(w=>w.id!==t.id);saveInv();renderAll();return`Removed <strong>${n}</strong>.`;}return`Couldn't find that watch. Include the brand or model name.`;}
-  if(lower.includes('add')){const pm=lower.match(/\$?([\d,]+)/);const bn=['rolex','patek','audemars','omega','iwc','cartier','breitling','tag heuer','richard mille'];const fb=bn.find(b=>lower.includes(b));if(fb&&pm){const p=parseFloat(pm[1].replace(/,/g,''));const bc=fb.split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');const mm=lower.match(new RegExp(fb+'\\s+([\\w\\s-]+?)(?:\\s+(?:bought|for|at|\\$)|$)','i'));const mo=mm?mm[1].trim().split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' '):'Unknown';const mv=c24Price(bc,p,'Good');inventory.unshift({id:nextId++,brand:bc,model:mo,ref:'-',year:'-',condition:'Good',buyPrice:p,buyDate:new Date().toISOString().split('T')[0],channel:'Private',market:mv,status:'In Stock',soldPrice:null,soldDate:null});saveInv();renderAll();return`Added <strong>${bc} ${mo}</strong> at <strong>${fmt(p)}</strong>. C24: <strong>${fmt(mv)}</strong>.`;}return`Include brand and price. E.g. "Add a Rolex Submariner for $12,500"`;}
+  if(pendingSold.active&&pendingSold.panel===panel){
+    const price=parsePrice(msg);
+    if(price&&pendingSold.watch){
+      const w=pendingSold.watch;
+      w.status='Sold';w.soldPrice=price;w.soldDate=new Date().toISOString().split('T')[0];
+      saveInv();renderAll();pendingSold={active:false,watch:null,panel:''};
+      return`Done. <strong>${w.brand} ${w.model}</strong> sold for <strong>${fmt(price)}</strong>. P&L: <strong>${price>=w.buyPrice?'+':''}${fmt(price-w.buyPrice)}</strong> (${pct(price,w.buyPrice)}).`;
+    }
+    pendingSold={active:false,watch:null,panel:''};
+  }
+
+  // ── SELL / MARK SOLD ──
+  if(lower.includes('sold')||lower.includes('sell')){
+    const price=parsePrice(msg);
+    const w=findWatch(msg);
+    if(w&&w.status!=='Sold'&&price){
+      w.status='Sold';w.soldPrice=price;w.soldDate=new Date().toISOString().split('T')[0];saveInv();renderAll();
+      return`Done. <strong>${w.brand} ${w.model}</strong> sold for <strong>${fmt(price)}</strong>. P&L: <strong>${price>=w.buyPrice?'+':''}${fmt(price-w.buyPrice)}</strong> (${pct(price,w.buyPrice)}).`;
+    }
+    if(w&&w.status!=='Sold'&&!price){
+      pendingSold={active:true,watch:w,panel};
+      return`Selling <strong>${w.brand} ${w.model}</strong> (cost: ${fmt(w.buyPrice)}). What was the sale price?`;
+    }
+    if(!w&&active.length)return`Which watch? I have: ${active.slice(0,5).map(x=>`<strong>${x.brand} ${x.model}</strong>`).join(', ')}${active.length>5?', ...':''}`;
+    return`No active watches to sell.`;
+  }
+
+  // ── DELETE / REMOVE ──
+  if(lower.includes('delete')||lower.includes('remove')){
+    const t=findWatch(msg);
+    if(t){const n=`${t.brand} ${t.model}`;inventory=inventory.filter(w=>w.id!==t.id);saveInv();renderAll();return`Removed <strong>${n}</strong>.`;}
+    return`Which watch? Include the brand or model name.`;
+  }
+
+  // ── ADD ──
+  if(lower.includes('add')||lower.includes('bought')||lower.includes('picked up')||lower.includes('just got')||lower.includes('copped')){
+    const brand=parseBrand(msg);
+    const price=parsePrice(msg);
+    if(brand){
+      const model=parseModel(msg,brand);
+      const displayModel=model||'Unknown';
+      if(price){
+        const mv=c24Price(brand,price,'Good');
+        inventory.unshift({id:nextId++,brand,model:displayModel,ref:'-',year:'-',condition:'Good',buyPrice:price,buyDate:new Date().toISOString().split('T')[0],channel:'Private',market:mv,status:'In Stock',soldPrice:null,soldDate:null});
+        saveInv();renderAll();
+        return`Added <strong>${brand} ${displayModel}</strong> at <strong>${fmt(price)}</strong>. C24 estimate: <strong>${fmt(mv)}</strong>.`;
+      }
+      // No price — ask for it
+      pendingAdd={active:true,brand,model:displayModel,panel};
+      return`Got it — <strong>${brand} ${displayModel}</strong>. What did you pay for it?`;
+    }
+    return`What brand? E.g. "Add a Tudor Black Bay 58 for $3,200"`;
+  }
+
+  // ── QUERIES ──
   if(lower.includes('stock')||lower.includes('inventory')||lower.includes('how many'))return`<strong>${k.active} watches</strong> in stock. Value: <strong>${fmt(k.totalMarket)}</strong>. Cost: ${fmt(k.totalCost)}. Unrealized: <strong>+${fmt(k.unrealized)}</strong>.`;
   if(lower.includes('profit')||lower.includes('earn')||lower.includes('made'))return`Realized: <strong>+${fmt(k.realized)}</strong> (${k.sold} sold). Unrealized: <strong>+${fmt(k.unrealized)}</strong>. Combined: <strong>+${fmt(k.realized+k.unrealized)}</strong>.`;
-  if(lower.includes('slow')||lower.includes('longest')||lower.includes('old')||lower.includes('over 30')){const sorted=[...active].sort((a,b)=>daysSince(b.buyDate)-daysSince(a.buyDate));const slow=sorted.filter(w=>daysSince(w.buyDate)>30);if(slow.length)return`<strong>${slow.length}</strong> held over 30 days: ${slow.map(w=>`<strong>${w.brand} ${w.model}</strong> (${daysSince(w.buyDate)}d)`).join(', ')}.`;return`Slowest: <strong>${sorted[0].brand} ${sorted[0].model}</strong> (${daysSince(sorted[0].buyDate)}d). All under 30 days.`;}
+  if(lower.includes('slow')||lower.includes('longest')||lower.includes('old')||lower.includes('sitting')||lower.includes('over 30')){const sorted=[...active].sort((a,b)=>daysSince(b.buyDate)-daysSince(a.buyDate));const slow=sorted.filter(w=>daysSince(w.buyDate)>30);if(slow.length)return`<strong>${slow.length}</strong> held over 30 days: ${slow.map(w=>`<strong>${w.brand} ${w.model}</strong> (${daysSince(w.buyDate)}d)`).join(', ')}.`;if(sorted.length)return`Slowest: <strong>${sorted[0].brand} ${sorted[0].model}</strong> (${daysSince(sorted[0].buyDate)}d). All under 30 days.`;return`No active watches.`;}
   if(lower.includes('best')||lower.includes('margin')||lower.includes('highest')){if(lower.includes('avg')||lower.includes('average')){const am=active.length?active.reduce((s,w)=>s+((w.market-w.buyPrice)/w.buyPrice*100),0)/active.length:0;return`Average margin: <strong>${am.toFixed(1)}%</strong> across ${active.length} watches.`;}const best=[...active].sort((a,b)=>(b.market-b.buyPrice)/b.buyPrice-(a.market-a.buyPrice)/a.buyPrice)[0];if(best)return`Best margin: <strong>${best.brand} ${best.model}</strong> at <strong>${pct(best.market,best.buyPrice)}</strong> (+${fmt(best.market-best.buyPrice)}).`;return`No active watches.`;}
-  if(lower.includes('list'))  {const l=inventory.filter(w=>w.status==='Listed');return l.length?`<strong>${l.length}</strong> listed: ${l.map(w=>`${w.brand} ${w.model}`).join(', ')}.`:'None listed.';}
+  if(lower.includes('list')){
+    // "list the daytona" = mark as listed
+    const t=active.find(w=>lower.includes(w.model.toLowerCase())||lower.includes(w.brand.toLowerCase()));
+    if(t&&(lower.includes('list the')||lower.includes('list my'))){t.status='Listed';saveInv();renderAll();return`<strong>${t.brand} ${t.model}</strong> is now listed.`;}
+    const l=inventory.filter(w=>w.status==='Listed');return l.length?`<strong>${l.length}</strong> listed: ${l.map(w=>`${w.brand} ${w.model}`).join(', ')}.`:'None listed.';
+  }
   if(lower.includes('value')||lower.includes('worth')||lower.includes('price')){const t=active.find(w=>lower.includes(w.model.toLowerCase())||lower.includes(w.brand.toLowerCase()));if(t)return`<strong>${t.brand} ${t.model}</strong> (${t.ref}): Cost ${fmt(t.buyPrice)}, C24: <strong>${fmt(t.market)}</strong>. Unrealized: <strong>${t.market>=t.buyPrice?'+':''}${fmt(t.market-t.buyPrice)}</strong>.`;}
   if(lower.includes('reset')){inventory=JSON.parse(JSON.stringify(DEFAULT_INV));nextId=8;saveInv();renderAll();return`Reset to defaults (${inventory.length} watches).`;}
-  return`I can: <strong>mark sold</strong>, <strong>add</strong>/<strong>delete</strong> watches, check <strong>profits</strong>, find <strong>slow movers</strong>, and more. Just ask naturally.`;
+  if(lower.includes('help'))return`I understand natural language. Try:<br>• "Add a Tudor Black Bay 58"<br>• "Bought a Daytona for $22k"<br>• "Sold the Submariner for $14,500"<br>• "Delete the IWC"<br>• "What's my profit?"<br>• "Which watch has been sitting longest?"<br>• "List the Nautilus"`;
+
+  // ── Fallback: try to detect if they're adding something ──
+  const brand=parseBrand(msg);
+  if(brand){
+    const model=parseModel(msg,brand);const price=parsePrice(msg);
+    if(price){
+      const mv=c24Price(brand,price,'Good');
+      inventory.unshift({id:nextId++,brand,model:model||'Unknown',ref:'-',year:'-',condition:'Good',buyPrice:price,buyDate:new Date().toISOString().split('T')[0],channel:'Private',market:mv,status:'In Stock',soldPrice:null,soldDate:null});
+      saveInv();renderAll();
+      return`Added <strong>${brand} ${model||'Unknown'}</strong> at <strong>${fmt(price)}</strong>. C24: <strong>${fmt(mv)}</strong>.`;
+    }
+    // Just mentioned a brand — check if it's in inventory
+    const inInv=active.find(w=>w.brand.toLowerCase()===brand.toLowerCase())||active.find(w=>lower.includes(w.model.toLowerCase()));
+    if(inInv)return`<strong>${inInv.brand} ${inInv.model}</strong>: Cost ${fmt(inInv.buyPrice)}, C24: <strong>${fmt(inInv.market)}</strong>. P&L: ${inInv.market>=inInv.buyPrice?'+':''}${fmt(inInv.market-inInv.buyPrice)}.`;
+    // Looks like they want to add
+    pendingAdd={active:true,brand,model:model||'Unknown',panel};
+    return`Want to add <strong>${brand} ${model||''}</strong>? What's the buy price?`;
+  }
+
+  return`Just tell me what you need. "Add a Tudor Black Bay for $3,200", "Sold the Daytona for $22k", "What's my profit?", or type <strong>help</strong>.`;
 }
 function sendAI(msg,panel){if(!msg||!msg.trim())return;addMsg(msg,'user',panel);const input=document.getElementById(`ai-input-${panel}`);if(input)input.value='';setTimeout(()=>{addMsg(aiRespond(msg,panel),'ai',panel);},350);}
 
