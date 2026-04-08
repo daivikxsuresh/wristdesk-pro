@@ -1323,22 +1323,29 @@ function lookupC24(brand,model,cond){
 // ── SUPABASE ──
 const SUPABASE_URL='https://ntoxahwhozjozmovkezs.supabase.co';
 const SUPABASE_ANON='sb_publishable_abYZOw9CMz1_7SSDsIT4SA_vvgx0AVG';
-const supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
+let supa=null;
 let currentUser=null;
+try{
+  if(window.supabase&&window.supabase.createClient){
+    supa=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
+  }
+}catch(e){console.warn('Supabase init failed, running in guest mode:',e);}
 
 // ── AUTH ──
 async function signUp(email,pwd){
-  const{data,error}=await supabase.auth.signUp({email,password:pwd});
+  if(!supa){showToast('Cloud not available — try refreshing');return;}
+  const{data,error}=await supa.auth.signUp({email,password:pwd});
   if(error) throw error;
   return data;
 }
 async function signIn(email,pwd){
-  const{data,error}=await supabase.auth.signInWithPassword({email,password:pwd});
+  if(!supa){showToast('Cloud not available — try refreshing');return;}
+  const{data,error}=await supa.auth.signInWithPassword({email,password:pwd});
   if(error) throw error;
   return data;
 }
 async function signOut(){
-  await supabase.auth.signOut();
+  if(supa) await supa.auth.signOut();
   currentUser=null;
   inventory=loadInvLocal();
   nextId=Math.max(...inventory.map(w=>w.id),0)+1;
@@ -1394,17 +1401,18 @@ async function handleAuth(isSignUp){
   }
 }
 
-// Listen for auth state changes
-supabase.auth.onAuthStateChange(async(event,session)=>{
-  currentUser=session?.user||null;
-  updateAuthUI();
-  if(currentUser){
-    // Load from cloud
-    await loadInvCloud();
-    await loadSettingsCloud();
-    showToast('Signed in — inventory synced from cloud');
-  }
-});
+// Listen for auth state changes (only if Supabase loaded)
+if(supa){
+  supa.auth.onAuthStateChange(async(event,session)=>{
+    currentUser=session?.user||null;
+    updateAuthUI();
+    if(currentUser){
+      await loadInvCloud();
+      await loadSettingsCloud();
+      showToast('Signed in — inventory synced from cloud');
+    }
+  });
+}
 
 // ── PERSISTENCE ──
 const STORAGE_KEY='wristdesk_pro_inventory';
@@ -1416,14 +1424,17 @@ const DEFAULT_INV=[
   {id:5,brand:'Rolex',model:'Daytona',ref:'116500LN',year:'2019',condition:'Good',buyPrice:18000,buyDate:'2026-03-18',channel:'Auction',market:29500,status:'In Stock',soldPrice:null,soldDate:null},
   {id:6,brand:'IWC',model:'Portugieser',ref:'IW500710',year:'2020',condition:'Like New',buyPrice:7200,buyDate:'2026-02-28',channel:'Private',market:8300,status:'In Stock',soldPrice:null,soldDate:null},
   {id:7,brand:'Rolex',model:'Datejust',ref:'126334',year:'2021',condition:'Good',buyPrice:9500,buyDate:'2026-01-05',channel:'Private',market:11200,status:'Sold',soldPrice:11200,soldDate:'2026-02-20'},
+  {id:8,brand:'Tudor',model:'Black Bay 58',ref:'M79030N',year:'2023',condition:'Like New',buyPrice:3200,buyDate:'2026-03-05',channel:'Chrono24',market:3800,status:'In Stock',soldPrice:null,soldDate:null},
+  {id:9,brand:'Tudor',model:'Pelagos',ref:'M25600TN',year:'2022',condition:'Good',buyPrice:4100,buyDate:'2026-02-10',channel:'Private',market:4600,status:'Listed',soldPrice:null,soldDate:null},
+  {id:10,brand:'Rolex',model:'GMT-Master II',ref:'126710BLNR',year:'2023',condition:'Unworn',buyPrice:16500,buyDate:'2026-03-20',channel:'Dealer',market:19800,status:'In Stock',soldPrice:null,soldDate:null},
 ];
 
 function loadInvLocal(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}return JSON.parse(JSON.stringify(DEFAULT_INV));}
 
 async function loadInvCloud(){
-  if(!currentUser) return;
+  if(!currentUser||!supa) return;
   try{
-    const{data,error}=await supabase.from('watches').select('*').eq('user_id',currentUser.id).order('id');
+    const{data,error}=await supa.from('watches').select('*').eq('user_id',currentUser.id).order('id');
     if(error) throw error;
     if(data&&data.length>0){
       inventory=data.map(w=>({
@@ -1443,7 +1454,7 @@ async function loadInvCloud(){
 }
 
 async function pushLocalToCloud(){
-  if(!currentUser) return;
+  if(!currentUser||!supa) return;
   const rows=inventory.map(w=>({
     user_id:currentUser.id, brand:w.brand, model:w.model, ref_number:w.ref,
     year:w.year, condition:w.condition, buy_price:w.buyPrice, buy_date:w.buyDate,
@@ -1451,7 +1462,7 @@ async function pushLocalToCloud(){
     sold_price:w.soldPrice, sold_date:w.soldDate
   }));
   if(rows.length>0){
-    const{data,error}=await supabase.from('watches').insert(rows).select();
+    const{data,error}=await supa.from('watches').insert(rows).select();
     if(!error&&data){
       inventory=data.map(w=>({
         id:w.id, brand:w.brand, model:w.model, ref:w.ref_number||'', year:w.year||'',
@@ -1472,35 +1483,35 @@ function saveInv(){
 }
 
 async function syncToCloud(){
-  if(!currentUser) return;
+  if(!currentUser||!supa) return;
   try{
     // Delete all user's watches and re-insert (simple full sync)
-    await supabase.from('watches').delete().eq('user_id',currentUser.id);
+    await supa.from('watches').delete().eq('user_id',currentUser.id);
     const rows=inventory.map(w=>({
       user_id:currentUser.id, brand:w.brand, model:w.model, ref_number:w.ref,
       year:w.year, condition:w.condition, buy_price:w.buyPrice, buy_date:w.buyDate,
       channel:w.channel, market_price:w.market, status:w.status,
       sold_price:w.soldPrice, sold_date:w.soldDate
     }));
-    if(rows.length>0) await supabase.from('watches').insert(rows);
+    if(rows.length>0) await supa.from('watches').insert(rows);
   }catch(e){console.warn('Cloud sync failed:',e);}
 }
 
 // ── SETTINGS CLOUD SYNC ──
 async function saveSettingsCloud(){
-  if(!currentUser) return;
+  if(!currentUser||!supa) return;
   try{
     const key=getGroqKey();
     const model=localStorage.getItem('wristdesk_groq_model')||'llama-3.3-70b-versatile';
-    await supabase.from('user_settings').upsert({
+    await supa.from('user_settings').upsert({
       user_id:currentUser.id, groq_key:key, groq_model:model
     },{onConflict:'user_id'});
   }catch(e){console.warn('Settings sync failed:',e);}
 }
 async function loadSettingsCloud(){
-  if(!currentUser) return;
+  if(!currentUser||!supa) return;
   try{
-    const{data}=await supabase.from('user_settings').select('*').eq('user_id',currentUser.id).single();
+    const{data}=await supa.from('user_settings').select('*').eq('user_id',currentUser.id).single();
     if(data){
       if(data.groq_key) localStorage.setItem(GROQ_KEY_STORAGE,data.groq_key);
       if(data.groq_model) localStorage.setItem('wristdesk_groq_model',data.groq_model);
