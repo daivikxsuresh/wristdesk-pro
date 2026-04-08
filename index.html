@@ -18,9 +18,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 /* ═══════════════════════════════════════════════════
    SWISS VAULT — Luxury Horlogerie Dashboard
@@ -953,7 +952,10 @@ body::before{
     </button>
   </nav>
   <div class="sidebar-footer">
-    <div class="live-indicator"><div class="live-dot"></div> Chrono24 Connected</div>
+    <div id="sidebar-auth">
+      <button onclick="openAuthModal()" style="width:100%;padding:0.5rem;font-size:var(--text-xs);background:linear-gradient(135deg,var(--gold),var(--gold-bright));color:var(--navy-deep);border:none;border-radius:6px;cursor:pointer;font-weight:600;font-family:var(--font-body)">Sign In / Sign Up</button>
+      <div style="font-size:9px;color:var(--text-faint);margin-top:0.4rem">Guest mode — data saved locally</div>
+    </div>
   </div>
 </aside>
 
@@ -1237,6 +1239,28 @@ body::before{
   </div>
 </div>
 
+<!-- Auth Modal -->
+<div class="modal-overlay" id="auth-modal" onclick="if(event.target===this)closeAuthModal()">
+  <div class="modal" style="width:380px">
+    <div class="modal-title">Welcome to WristDesk Pro</div>
+    <div style="font-size:var(--text-xs);color:var(--text-secondary);margin-bottom:1rem">Sign in to sync your inventory across devices.</div>
+    <div class="form-group" style="margin-bottom:0.8rem">
+      <label class="form-label">Email</label>
+      <input class="form-input" id="auth-email" type="email" placeholder="you@email.com">
+    </div>
+    <div class="form-group" style="margin-bottom:0.8rem">
+      <label class="form-label">Password</label>
+      <input class="form-input" id="auth-pwd" type="password" placeholder="Min 6 characters" onkeydown="if(event.key==='Enter')handleAuth(false)">
+    </div>
+    <div id="auth-error" style="font-size:var(--text-xs);color:var(--red);margin-bottom:0.8rem"></div>
+    <div class="modal-footer" style="flex-direction:column;gap:0.5rem">
+      <button class="btn-primary" id="auth-submit-btn" onclick="handleAuth(false)" style="width:100%">Sign In</button>
+      <button class="btn-ghost" onclick="handleAuth(true)" style="width:100%;font-size:var(--text-xs)">Don't have an account? Sign Up</button>
+      <button class="btn-ghost" onclick="closeAuthModal()" style="font-size:var(--text-xs);color:var(--text-faint)">Continue as Guest</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast-container" id="toast-container"></div>
 
 <script>
@@ -1296,19 +1320,91 @@ function lookupC24(brand,model,cond){
   return{low:Math.round(base*0.9/100)*100,fair:base,high:Math.round(base*1.12/100)*100,comps:Math.floor(Math.random()*40)+12,matched:`${brand} ${model}`};
 }
 
-// ── FIREBASE ──
-const firebaseConfig={
-  apiKey:"AIzaSyAeZ5ynZC2V3MqejL8cWF2fzNLZv7vjXmw",
-  authDomain:"wristdeck-pro.firebaseapp.com",
-  projectId:"wristdeck-pro",
-  storageBucket:"wristdeck-pro.firebasestorage.app",
-  messagingSenderId:"890203565687",
-  appId:"1:890203565687:web:e931a4c9ed24a051aea072",
-  measurementId:"G-0FT8QR10G8"
-};
-firebase.initializeApp(firebaseConfig);
-const db=firebase.firestore();
-const DOC_REF=db.collection('dealers').doc('default');
+// ── SUPABASE ──
+const SUPABASE_URL='https://ntoxahwhozjozmovkezs.supabase.co';
+const SUPABASE_ANON='sb_publishable_abYZOw9CMz1_7SSDsIT4SA_vvgx0AVG';
+const supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
+let currentUser=null;
+
+// ── AUTH ──
+async function signUp(email,pwd){
+  const{data,error}=await supabase.auth.signUp({email,password:pwd});
+  if(error) throw error;
+  return data;
+}
+async function signIn(email,pwd){
+  const{data,error}=await supabase.auth.signInWithPassword({email,password:pwd});
+  if(error) throw error;
+  return data;
+}
+async function signOut(){
+  await supabase.auth.signOut();
+  currentUser=null;
+  inventory=loadInvLocal();
+  nextId=Math.max(...inventory.map(w=>w.id),0)+1;
+  renderAll();updateAuthUI();
+  showToast('Signed out — using local data');
+}
+
+function updateAuthUI(){
+  const footer=document.getElementById('sidebar-auth');
+  if(!footer) return;
+  if(currentUser){
+    const email=currentUser.email||'User';
+    const short=email.split('@')[0];
+    footer.innerHTML=`
+      <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem">
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--gold-dim);display:flex;align-items:center;justify-content:center;font-size:var(--text-xs);color:var(--gold);font-weight:600">${short[0].toUpperCase()}</div>
+        <span style="font-size:var(--text-xs);color:var(--text-primary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${email}">${short}</span>
+      </div>
+      <button onclick="signOut()" style="width:100%;padding:0.4rem;font-size:var(--text-xs);background:var(--navy-light);color:var(--text-secondary);border:1px solid var(--navy-lighter);border-radius:6px;cursor:pointer;font-family:var(--font-body)">Sign Out</button>
+      <div style="font-size:9px;color:var(--green);margin-top:0.4rem;display:flex;align-items:center;gap:4px"><div style="width:6px;height:6px;border-radius:50%;background:var(--green)"></div> Cloud synced</div>`;
+  } else {
+    footer.innerHTML=`
+      <button onclick="openAuthModal()" style="width:100%;padding:0.5rem;font-size:var(--text-xs);background:linear-gradient(135deg,var(--gold),var(--gold-bright));color:var(--navy-deep);border:none;border-radius:6px;cursor:pointer;font-weight:600;font-family:var(--font-body)">Sign In / Sign Up</button>
+      <div style="font-size:9px;color:var(--text-faint);margin-top:0.4rem">Guest mode — data saved locally</div>`;
+  }
+}
+
+function openAuthModal(){document.getElementById('auth-modal').classList.add('open');}
+function closeAuthModal(){document.getElementById('auth-modal').classList.remove('open');document.getElementById('auth-error').textContent='';}
+
+async function handleAuth(isSignUp){
+  const email=document.getElementById('auth-email').value.trim();
+  const pwd=document.getElementById('auth-pwd').value;
+  const errEl=document.getElementById('auth-error');
+  const btn=document.getElementById('auth-submit-btn');
+  errEl.textContent='';
+  if(!email||!pwd){errEl.textContent='Enter email and password.';return;}
+  if(pwd.length<6){errEl.textContent='Password must be at least 6 characters.';return;}
+  btn.disabled=true;btn.textContent=isSignUp?'Creating account...':'Signing in...';
+  try{
+    if(isSignUp){
+      await signUp(email,pwd);
+      showToast('Account created! Check your email to confirm, then sign in.');
+      closeAuthModal();
+    } else {
+      await signIn(email,pwd);
+      closeAuthModal();
+    }
+  }catch(e){
+    errEl.textContent=e.message||'Auth failed.';
+  }finally{
+    btn.disabled=false;btn.textContent=isSignUp?'Sign Up':'Sign In';
+  }
+}
+
+// Listen for auth state changes
+supabase.auth.onAuthStateChange(async(event,session)=>{
+  currentUser=session?.user||null;
+  updateAuthUI();
+  if(currentUser){
+    // Load from cloud
+    await loadInvCloud();
+    await loadSettingsCloud();
+    showToast('Signed in — inventory synced from cloud');
+  }
+});
 
 // ── PERSISTENCE ──
 const STORAGE_KEY='wristdesk_pro_inventory';
@@ -1321,32 +1417,100 @@ const DEFAULT_INV=[
   {id:6,brand:'IWC',model:'Portugieser',ref:'IW500710',year:'2020',condition:'Like New',buyPrice:7200,buyDate:'2026-02-28',channel:'Private',market:8300,status:'In Stock',soldPrice:null,soldDate:null},
   {id:7,brand:'Rolex',model:'Datejust',ref:'126334',year:'2021',condition:'Good',buyPrice:9500,buyDate:'2026-01-05',channel:'Private',market:11200,status:'Sold',soldPrice:11200,soldDate:'2026-02-20'},
 ];
-function loadInv(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}return JSON.parse(JSON.stringify(DEFAULT_INV));}
-function saveInv(){
-  // Save to localStorage (offline cache)
-  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(inventory));}catch(e){}
-  // Save to Firestore (cloud sync)
-  DOC_REF.set({inventory:JSON.parse(JSON.stringify(inventory)),updatedAt:firebase.firestore.FieldValue.serverTimestamp()}).catch(e=>console.warn('Firestore save failed:',e));
-}
 
-// Start with localStorage as immediate fallback
-let inventory=loadInv();
+function loadInvLocal(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}return JSON.parse(JSON.stringify(DEFAULT_INV));}
 
-// ── REAL-TIME SYNC — Firestore is the source of truth ──
-DOC_REF.onSnapshot(snap=>{
-  if(!snap.exists){
-    // First time ever: push current data to Firestore
-    saveInv();
-    return;
-  }
-  const data=snap.data();
-  if(data&&data.inventory){
-    inventory=data.inventory;
+async function loadInvCloud(){
+  if(!currentUser) return;
+  try{
+    const{data,error}=await supabase.from('watches').select('*').eq('user_id',currentUser.id).order('id');
+    if(error) throw error;
+    if(data&&data.length>0){
+      inventory=data.map(w=>({
+        id:w.id, brand:w.brand, model:w.model, ref:w.ref_number||'', year:w.year||'',
+        condition:w.condition||'Good', buyPrice:w.buy_price, buyDate:w.buy_date||'',
+        channel:w.channel||'', market:w.market_price||0, status:w.status||'In Stock',
+        soldPrice:w.sold_price, soldDate:w.sold_date, supaId:w.id
+      }));
+    } else {
+      // First login — push local data to cloud
+      await pushLocalToCloud();
+    }
     nextId=Math.max(...inventory.map(w=>w.id),0)+1;
     try{localStorage.setItem(STORAGE_KEY,JSON.stringify(inventory));}catch(e){}
     renderAll();
+  }catch(e){console.warn('Cloud load failed, using local:',e);}
+}
+
+async function pushLocalToCloud(){
+  if(!currentUser) return;
+  const rows=inventory.map(w=>({
+    user_id:currentUser.id, brand:w.brand, model:w.model, ref_number:w.ref,
+    year:w.year, condition:w.condition, buy_price:w.buyPrice, buy_date:w.buyDate,
+    channel:w.channel, market_price:w.market, status:w.status,
+    sold_price:w.soldPrice, sold_date:w.soldDate
+  }));
+  if(rows.length>0){
+    const{data,error}=await supabase.from('watches').insert(rows).select();
+    if(!error&&data){
+      inventory=data.map(w=>({
+        id:w.id, brand:w.brand, model:w.model, ref:w.ref_number||'', year:w.year||'',
+        condition:w.condition||'Good', buyPrice:w.buy_price, buyDate:w.buy_date||'',
+        channel:w.channel||'', market:w.market_price||0, status:w.status||'In Stock',
+        soldPrice:w.sold_price, soldDate:w.sold_date, supaId:w.id
+      }));
+      nextId=Math.max(...inventory.map(w=>w.id),0)+1;
+    }
   }
-},err=>{console.warn('Firestore listen error:',err);});
+}
+
+function saveInv(){
+  // Always save to localStorage (offline cache)
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(inventory));}catch(e){}
+  // If logged in, sync to Supabase
+  if(currentUser) syncToCloud();
+}
+
+async function syncToCloud(){
+  if(!currentUser) return;
+  try{
+    // Delete all user's watches and re-insert (simple full sync)
+    await supabase.from('watches').delete().eq('user_id',currentUser.id);
+    const rows=inventory.map(w=>({
+      user_id:currentUser.id, brand:w.brand, model:w.model, ref_number:w.ref,
+      year:w.year, condition:w.condition, buy_price:w.buyPrice, buy_date:w.buyDate,
+      channel:w.channel, market_price:w.market, status:w.status,
+      sold_price:w.soldPrice, sold_date:w.soldDate
+    }));
+    if(rows.length>0) await supabase.from('watches').insert(rows);
+  }catch(e){console.warn('Cloud sync failed:',e);}
+}
+
+// ── SETTINGS CLOUD SYNC ──
+async function saveSettingsCloud(){
+  if(!currentUser) return;
+  try{
+    const key=getGroqKey();
+    const model=localStorage.getItem('wristdesk_groq_model')||'llama-3.3-70b-versatile';
+    await supabase.from('user_settings').upsert({
+      user_id:currentUser.id, groq_key:key, groq_model:model
+    },{onConflict:'user_id'});
+  }catch(e){console.warn('Settings sync failed:',e);}
+}
+async function loadSettingsCloud(){
+  if(!currentUser) return;
+  try{
+    const{data}=await supabase.from('user_settings').select('*').eq('user_id',currentUser.id).single();
+    if(data){
+      if(data.groq_key) localStorage.setItem(GROQ_KEY_STORAGE,data.groq_key);
+      if(data.groq_model) localStorage.setItem('wristdesk_groq_model',data.groq_model);
+      updateAIStatus();
+    }
+  }catch(e){}
+}
+
+// Start with localStorage as immediate fallback
+let inventory=loadInvLocal();
 let nextId=Math.max(...inventory.map(w=>w.id),0)+1;
 let soldTarget=null,deleteTarget=null,profitChart=null,searchQuery='';
 
@@ -1683,6 +1847,7 @@ function saveAISettings(){
   localStorage.setItem('wristdesk_groq_model',document.getElementById('groq-model-select').value);
   closeAISettings();updateAIStatus();
   showToast(getGroqKey()?'Groq API key saved':'API key cleared');
+  saveSettingsCloud();
 }
 async function testGroqKey(){
   const key=document.getElementById('groq-key-input').value.trim();
@@ -2142,6 +2307,7 @@ function toggleMobileSidebar(){
 window.addEventListener('DOMContentLoaded',()=>{
   renderAll();
   updateAIStatus();
+  updateAuthUI();
   const hasKey=!!getGroqKey();
   if(hasKey){
     addMsg('WristDesk AI ready — powered by Groq. I know your full inventory. Ask anything, use watch nicknames (BB58, Pepsi, Batman...), or command naturally.','ai','dash');
