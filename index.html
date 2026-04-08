@@ -59,44 +59,94 @@
 }
 /* ── LIGHT THEME ── */
 [data-theme="light"]{
-  --navy-deepest:#f5f3ef;
-  --navy-deep:#faf8f5;
+  --navy-deepest:#eae6df;
+  --navy-deep:#f4f1ec;
   --navy:#ffffff;
-  --navy-mid:#f0ede8;
-  --navy-light:#e8e4dd;
-  --navy-lighter:#d9d4cb;
-  --navy-muted:#a09889;
-  --gold:#8b6914;
-  --gold-bright:#a47d1e;
-  --gold-pale:#6b5010;
-  --gold-dim:rgba(139,105,20,0.08);
-  --gold-glow:rgba(139,105,20,0.04);
+  --navy-mid:#f0ede7;
+  --navy-light:#e2ddd5;
+  --navy-lighter:#ccc6bb;
+  --navy-muted:#968e82;
+  --gold:#7a5c0f;
+  --gold-bright:#96720e;
+  --gold-pale:#5c4510;
+  --gold-dim:rgba(122,92,15,0.1);
+  --gold-glow:rgba(122,92,15,0.05);
   --cream:#2c2820;
   --cream-muted:#5a5347;
   --text-primary:#1a1714;
-  --text-secondary:#6b6560;
-  --text-faint:#b0a99e;
-  --green:#1a8a4a;
-  --green-dim:rgba(26,138,74,0.1);
-  --red:#c0392b;
-  --red-dim:rgba(192,57,43,0.1);
-  --amber:#b8860b;
-  --amber-dim:rgba(184,134,11,0.1);
+  --text-secondary:#5c564e;
+  --text-faint:#9e978c;
+  --green:#158040;
+  --green-dim:rgba(21,128,64,0.1);
+  --red:#b5301f;
+  --red-dim:rgba(181,48,31,0.1);
+  --amber:#9a7209;
+  --amber-dim:rgba(154,114,9,0.1);
 }
-[data-theme="light"] body::before{opacity:0.015}
-[data-theme="light"] .sidebar{border-right-color:rgba(0,0,0,0.08)}
-[data-theme="light"] .sidebar::after{background:linear-gradient(to bottom,transparent,var(--gold),transparent);opacity:0.1}
-[data-theme="light"] .card{box-shadow:0 1px 3px rgba(0,0,0,0.06)}
-[data-theme="light"] .form-input{background:var(--navy);border-color:var(--navy-lighter);color:var(--text-primary)}
-[data-theme="light"] .form-input:focus{border-color:var(--gold)}
-[data-theme="light"] .inv-table th{background:var(--navy-mid);color:var(--text-secondary)}
-[data-theme="light"] .inv-table td{border-bottom-color:var(--navy-light)}
-[data-theme="light"] .msg-bubble{background:var(--navy-mid)}
-[data-theme="light"] .msg-user .msg-bubble{background:var(--gold-dim)}
-[data-theme="light"] .topbar{border-bottom-color:rgba(0,0,0,0.06)}
-[data-theme="light"] .kpi-card{background:var(--navy);border-color:var(--navy-light)}
-[data-theme="light"] .mobile-tabbar{background:var(--navy-deepest);border-top:1px solid var(--navy-lighter)}
-[data-theme="light"] .chip{background:var(--navy-mid);color:var(--text-secondary)}
+[data-theme="light"] body{background:var(--navy-deep)}
+[data-theme="light"] body::before{opacity:0}
+/* Sidebar */
+[data-theme="light"] .sidebar{background:var(--navy);border-right:1px solid var(--navy-light);box-shadow:2px 0 8px rgba(0,0,0,0.04)}
+[data-theme="light"] .sidebar::after{display:none}
+[data-theme="light"] .sidebar-brand{border-bottom-color:var(--navy-light)}
+[data-theme="light"] .brand-name{color:var(--gold)}
+[data-theme="light"] .nav-section{color:var(--gold);opacity:0.7}
+[data-theme="light"] .nav-item:hover{background:var(--navy-mid);color:var(--text-primary)}
+[data-theme="light"] .nav-item.active{background:var(--gold-dim);color:var(--gold)}
+[data-theme="light"] .sidebar-footer{border-top-color:var(--navy-light)}
+/* Topbar */
+[data-theme="light"] .topbar{background:rgba(255,255,255,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--navy-light)}
+[data-theme="light"] .topbar::after{background:linear-gradient(90deg,transparent,var(--navy-light),transparent)}
+[data-theme="light"] .page-title{color:var(--text-primary)}
+[data-theme="light"] .icon-btn{color:var(--text-secondary)}
+[data-theme="light"] .icon-btn:hover{background:var(--navy-mid);color:var(--text-primary)}
+[data-theme="light"] .add-btn{background:var(--gold);color:#fff;box-shadow:0 2px 8px rgba(122,92,15,0.2)}
+[data-theme="light"] .add-btn:hover{box-shadow:0 4px 12px rgba(122,92,15,0.3)}
+[data-theme="light"] .search-bar{background:var(--navy-mid);border-color:var(--navy-lighter)}
+[data-theme="light"] .search-bar:focus-within{border-color:var(--gold);background:var(--navy)}
+/* Cards */
+[data-theme="light"] .card{background:var(--navy);border:1px solid var(--navy-light);box-shadow:0 1px 4px rgba(0,0,0,0.05)}
+[data-theme="light"] .card-header{border-bottom-color:var(--navy-light)}
+[data-theme="light"] .card-title{color:var(--gold)}
+/* KPI */
+[data-theme="light"] .kpi-card{background:var(--navy);border:1px solid var(--navy-light);box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+[data-theme="light"] .kpi-card::before{background:linear-gradient(90deg,transparent,var(--navy-lighter),transparent)}
+[data-theme="light"] .kpi-card:hover{border-color:var(--gold);box-shadow:0 2px 8px rgba(122,92,15,0.08)}
+[data-theme="light"] .kpi-label{color:var(--text-secondary)}
+/* Tables */
+[data-theme="light"] .inv-table th{background:var(--navy-mid);color:var(--text-secondary);border-bottom:2px solid var(--navy-light)}
+[data-theme="light"] .inv-table td{border-bottom:1px solid var(--navy-mid)}
+[data-theme="light"] .inv-table tr:hover td{background:var(--navy-mid)}
+/* Forms & inputs */
+[data-theme="light"] .form-input{background:var(--navy);border:1px solid var(--navy-lighter);color:var(--text-primary)}
+[data-theme="light"] .form-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(122,92,15,0.08)}
+[data-theme="light"] select.form-input{background:var(--navy-mid)}
+/* AI / Chat */
+[data-theme="light"] .msg-bubble{background:var(--navy-mid);color:var(--text-primary)}
+[data-theme="light"] .msg-user .msg-bubble{background:var(--gold-dim);color:var(--text-primary)}
+[data-theme="light"] .msg-avatar{background:var(--navy-mid);color:var(--text-secondary)}
+[data-theme="light"] .ai-input-row{background:var(--navy);border-top:1px solid var(--navy-light)}
+[data-theme="light"] .ai-input{background:var(--navy-mid);color:var(--text-primary)}
+[data-theme="light"] .send-btn{background:var(--gold);box-shadow:0 2px 6px rgba(122,92,15,0.2)}
+[data-theme="light"] .chip{background:var(--navy-mid);color:var(--text-secondary);border:1px solid var(--navy-light)}
+[data-theme="light"] .chip:hover{background:var(--gold-dim);color:var(--gold);border-color:var(--gold)}
+/* Status badges */
+[data-theme="light"] .status-badge{font-weight:600}
+/* Profit banner */
+[data-theme="light"] .profit-banner{background:var(--navy);border:1px solid var(--navy-light);box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+[data-theme="light"] .profit-banner::before{display:none}
+/* Modals */
+[data-theme="light"] .modal{background:var(--navy);border:1px solid var(--navy-light);box-shadow:0 20px 60px rgba(0,0,0,0.12)}
+[data-theme="light"] .modal-overlay.open,.sold-overlay.open,.delete-overlay.open{background:rgba(0,0,0,0.3)}
+[data-theme="light"] .sold-card,[data-theme="light"] .delete-card{background:var(--navy);box-shadow:0 20px 60px rgba(0,0,0,0.12)}
+/* Chart */
+[data-theme="light"] .chart-container{background:var(--navy-mid);border-radius:0 0 10px 10px}
+/* Mobile */
+[data-theme="light"] .mobile-tabbar{background:var(--navy);border-top:1px solid var(--navy-light);box-shadow:0 -1px 4px rgba(0,0,0,0.04)}
+[data-theme="light"] .mobile-tab{color:var(--text-faint)}
+[data-theme="light"] .mobile-tab.active{color:var(--gold)}
+/* Toast */
+[data-theme="light"] .toast{background:var(--text-primary);color:var(--navy)}
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
@@ -813,8 +863,9 @@ body::before{
   .add-btn{padding:0;width:34px;justify-content:center}
   .topbar-right{gap:0.35rem}
 
-  /* Hide CSV download on mobile */
+  /* Hide utility buttons on mobile — keep topbar clean */
   .icon-btn[title="Export CSV"]{display:none}
+  .icon-btn[title="Refresh prices"]{display:none}
 
   /* Hamburger button in topbar */
   .mobile-menu-btn{
@@ -1202,7 +1253,7 @@ body::before{
   <button class="mobile-tab" data-view="inventory" onclick="mobileNav('inventory',this)"><i data-lucide="package"></i>Inventory</button>
   <button class="mobile-tab" data-view="sold" onclick="mobileNav('sold',this)"><i data-lucide="check-circle-2"></i>Sold</button>
   <button class="mobile-tab" data-view="ai" onclick="mobileNav('ai',this)"><i data-lucide="bot"></i>AI</button>
-  <button class="mobile-tab" data-view="export" onclick="mobileNav('export',this)"><i data-lucide="file-spreadsheet"></i>Export</button>
+  <button class="mobile-tab" data-view="lookup" onclick="mobileNav('lookup',this)"><i data-lucide="search"></i>Lookup</button>
 </nav>
 </div>
 
