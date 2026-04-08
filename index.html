@@ -1550,8 +1550,9 @@ ACTIONS: When the user wants to modify inventory, include a JSON command at the 
 \`\`\`cmd{"action":"sell","id":<watch_id>,"soldPrice":5000}\`\`\`
 \`\`\`cmd{"action":"delete","id":<watch_id>}\`\`\`
 \`\`\`cmd{"action":"list","id":<watch_id>}\`\`\`
+\`\`\`cmd{"action":"update","id":<watch_id>,"buyPrice":3750}\`\`\` (can also update: brand, model, ref, year, condition, channel)
 
-Use watch IDs from inventory. Keep responses concise — talk like a fellow watch dealer. Use $ for prices.`;
+Use watch IDs from inventory. ALWAYS include the cmd block when performing actions — without it, nothing changes. Keep responses concise — talk like a fellow watch dealer. Use $ for prices.`;
 }
 
 function parseAndExecuteCmd(response){
@@ -1573,6 +1574,19 @@ function parseAndExecuteCmd(response){
     } else if(cmd.action==='list'){
       const w=inventory.find(x=>x.id===cmd.id);
       if(w){w.status=w.status==='Listed'?'In Stock':'Listed';saveInv();renderAll();showToast(`${w.brand} ${w.model} → ${w.status}`);}
+    } else if(cmd.action==='update'){
+      const w=inventory.find(x=>x.id===cmd.id);
+      if(w){
+        if(cmd.buyPrice!==undefined){w.buyPrice=cmd.buyPrice;w.market=c24Price(w.brand,cmd.buyPrice,w.condition);}
+        if(cmd.brand) w.brand=cmd.brand;
+        if(cmd.model) w.model=cmd.model;
+        if(cmd.ref) w.ref=cmd.ref;
+        if(cmd.year) w.year=cmd.year;
+        if(cmd.condition){w.condition=cmd.condition;w.market=c24Price(w.brand,w.buyPrice,cmd.condition);}
+        if(cmd.status) w.status=cmd.status;
+        if(cmd.channel) w.channel=cmd.channel;
+        saveInv();renderAll();showToast(`${w.brand} ${w.model} updated`);
+      }
     }
     return clean;
   }catch(e){ return response.replace(/```cmd\{.*?\}```/gs,'').trim(); }
@@ -1684,11 +1698,25 @@ function parseModel(text,brand){
   return cleaned?cleaned.split(' ').map(w=>w[0]?w[0].toUpperCase()+w.slice(1):w).join(' '):'';
 }
 function parsePrice(text){
-  // Match prices like $12,500 or 12500 or 12,500 or $12.5k or 12.5k
-  const kMatch=text.match(/\$?\s*([\d,.]+)\s*k\b/i);
-  if(kMatch)return Math.round(parseFloat(kMatch[1].replace(/,/g,''))*1000);
-  const m=text.match(/\$?\s*([\d,]+(?:\.\d{1,2})?)/);
-  if(m){const v=parseFloat(m[1].replace(/,/g,''));if(v>50)return v;}// ignore tiny numbers
+  // Strip out watch model names/refs that contain numbers (BB58, 5711, 126710BLRO, etc.)
+  // so we don't accidentally grab model numbers as prices
+  let cleaned=text;
+  // Remove known nickname patterns with numbers
+  cleaned=cleaned.replace(/\b[a-zA-Z]{1,4}\d{1,6}[a-zA-Z]*\b/g,''); // BB58, M79030N, 126710BLRO, etc.
+  cleaned=cleaned.replace(/\b\d{4,6}[a-zA-Z]+\b/g,''); // 126710BLNR, 15500ST, etc.
+  cleaned=cleaned.replace(/\bref\.?\s*\d+/gi,''); // ref 124060
+  // Match prices like $12.5k or 12.5k
+  const kMatch=cleaned.match(/\$\s*([\d,.]+)\s*k\b/i)||cleaned.match(/(?:for|at|paid|bought|price|cost)\s*\$?\s*([\d,.]+)\s*k\b/i);
+  if(kMatch){const v=kMatch[1]||kMatch[2];return Math.round(parseFloat(v.replace(/,/g,''))*1000);}
+  // Match explicit $ prices: $12,500
+  const dollarMatch=cleaned.match(/\$\s*([\d,]+(?:\.\d{1,2})?)/);
+  if(dollarMatch){const v=parseFloat(dollarMatch[1].replace(/,/g,''));if(v>50)return v;}
+  // Match prices after keywords: "for 12500", "bought 3750", "paid 8000"
+  const kwMatch=cleaned.match(/(?:for|at|paid|bought|price|cost)\s+\$?\s*([\d,]+(?:\.\d{1,2})?)/i);
+  if(kwMatch){const v=parseFloat(kwMatch[1].replace(/,/g,''));if(v>50)return v;}
+  // Standalone large numbers (likely prices, not model numbers)
+  const numMatch=cleaned.match(/\b([\d,]+(?:\.\d{1,2})?)\b/g);
+  if(numMatch){for(const n of numMatch){const v=parseFloat(n.replace(/,/g,''));if(v>=500)return v;}} // raised threshold to 500
   return null;
 }
 function findWatch(text){
