@@ -147,6 +147,25 @@
 [data-theme="light"] .mobile-tab.active{color:var(--gold)}
 /* Toast */
 [data-theme="light"] .toast{background:var(--text-primary);color:var(--navy)}
+/* Text & data visibility */
+[data-theme="light"] .price-cell{color:var(--text-primary)}
+[data-theme="light"] .market-cell{color:var(--gold)}
+[data-theme="light"] .watch-ref{color:var(--text-secondary)}
+[data-theme="light"] .status-sold{background:rgba(0,0,0,0.04);color:var(--text-secondary)}
+[data-theme="light"] .action-btn{color:var(--text-secondary)}
+[data-theme="light"] .action-btn:hover{background:var(--navy-mid);color:var(--text-primary)}
+[data-theme="light"] .msg-time{color:var(--text-faint)}
+[data-theme="light"] .ai-messages{background:var(--navy-mid)}
+[data-theme="light"] .upload-zone{background:var(--navy-mid);border-color:var(--navy-lighter)}
+[data-theme="light"] .upload-zone:hover{border-color:var(--gold)}
+[data-theme="light"] .btn-ghost{color:var(--text-secondary)}
+[data-theme="light"] .btn-ghost:hover{background:var(--navy-mid);color:var(--text-primary)}
+[data-theme="light"] .btn-primary{background:var(--gold);color:#fff}
+[data-theme="light"] .btn-danger{background:var(--red);color:#fff}
+[data-theme="light"] .quick-chips{border-top:1px solid var(--navy-light)}
+[data-theme="light"] .page-badge{border:1px solid var(--navy-light)}
+[data-theme="light"] .export-header{background:var(--navy);border:1px solid var(--navy-light)}
+[data-theme="light"] .view-scroll{background:var(--navy-deep)}
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
@@ -1823,20 +1842,27 @@ function renderChart(){
   const ctx=document.getElementById('profitChart');if(!ctx)return;
   if(profitChart)profitChart.destroy();
   const active=inventory.filter(w=>w.status!=='Sold');
+  const isLight=getTheme()==='light';
+  const txtColor=isLight?'rgba(90,80,70,0.7)':'rgba(226,221,212,0.5)';
+  const gridColor=isLight?'rgba(0,0,0,0.06)':'rgba(201,169,110,0.04)';
+  const costBg=isLight?'rgba(122,92,15,0.15)':'rgba(201,169,110,0.15)';
+  const costBdr=isLight?'rgba(122,92,15,0.5)':'rgba(201,169,110,0.5)';
+  const valBg=isLight?'rgba(21,128,64,0.15)':'rgba(111,207,151,0.15)';
+  const valBdr=isLight?'rgba(21,128,64,0.5)':'rgba(111,207,151,0.5)';
   profitChart=new Chart(ctx,{
     type:'bar',
     data:{
       labels:active.map(w=>`${w.brand.split(' ')[0]} ${w.model}`),
       datasets:[
-        {label:'Cost',data:active.map(w=>w.buyPrice),backgroundColor:'rgba(201,169,110,0.15)',borderColor:'rgba(201,169,110,0.5)',borderWidth:1,borderRadius:3},
-        {label:'C24 Value',data:active.map(w=>w.market),backgroundColor:'rgba(111,207,151,0.15)',borderColor:'rgba(111,207,151,0.5)',borderWidth:1,borderRadius:3}
+        {label:'Cost',data:active.map(w=>w.buyPrice),backgroundColor:costBg,borderColor:costBdr,borderWidth:1,borderRadius:3},
+        {label:'C24 Value',data:active.map(w=>w.market),backgroundColor:valBg,borderColor:valBdr,borderWidth:1,borderRadius:3}
       ]
     },
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{labels:{color:'rgba(226,221,212,0.5)',font:{size:10,family:'Outfit'}}}},
+      plugins:{legend:{labels:{color:txtColor,font:{size:10,family:'Outfit'}}}},
       scales:{
-        x:{ticks:{color:'rgba(226,221,212,0.3)',maxRotation:30,font:{size:9,family:'Outfit'}},grid:{color:'rgba(201,169,110,0.04)'}},
-        y:{ticks:{color:'rgba(226,221,212,0.3)',callback:v=>'$'+v.toLocaleString(),font:{size:9,family:'Outfit'}},grid:{color:'rgba(201,169,110,0.04)'}}
+        x:{ticks:{color:txtColor,maxRotation:30,font:{size:9,family:'Outfit'}},grid:{color:gridColor}},
+        y:{ticks:{color:txtColor,callback:v=>'$'+v.toLocaleString(),font:{size:9,family:'Outfit'}},grid:{color:gridColor}}
       }
     }
   });
@@ -2240,9 +2266,10 @@ function getUserInitial(){
 function applyTheme(theme){
   document.documentElement.setAttribute('data-theme',theme||'dark');
   localStorage.setItem('wristdesk_theme',theme||'dark');
-  // Update meta theme-color for mobile
   const meta=document.querySelector('meta[name="theme-color"]');
-  if(meta) meta.content=theme==='light'?'#faf8f5':'#060911';
+  if(meta) meta.content=theme==='light'?'#f4f1ec':'#060911';
+  // Re-render chart with new theme colors
+  try{renderChart();}catch(e){}
 }
 function getTheme(){
   if(currentUser?.user_metadata?.theme) return currentUser.user_metadata.theme;
