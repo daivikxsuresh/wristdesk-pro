@@ -1552,7 +1552,14 @@ ACTIONS: When the user wants to modify inventory, include a JSON command at the 
 \`\`\`cmd{"action":"list","id":<watch_id>}\`\`\`
 \`\`\`cmd{"action":"update","id":<watch_id>,"buyPrice":3750}\`\`\` (can also update: brand, model, ref, year, condition, channel)
 
-Use watch IDs from inventory. ALWAYS include the cmd block when performing actions — without it, nothing changes. Keep responses concise — talk like a fellow watch dealer. Use $ for prices.`;
+CRITICAL RULES FOR CMD BLOCKS:
+- ONLY include a cmd block when you have ALL required info and are READY to execute the action.
+- For "add": you MUST have brand, model, AND buyPrice before including the cmd block. If any is missing, ASK the user first — do NOT include a cmd block yet.
+- NEVER show example or hypothetical cmd blocks. They will be executed immediately.
+- NEVER include a cmd block when asking a follow-up question.
+- One cmd block per message maximum.
+
+Use watch IDs from inventory. Keep responses concise — talk like a fellow watch dealer. Use $ for prices.`;
 }
 
 function parseAndExecuteCmd(response){
@@ -1562,6 +1569,10 @@ function parseAndExecuteCmd(response){
     const cmd=JSON.parse(cmdMatch[1]);
     const clean=response.replace(/```cmd\{.*?\}```/gs,'').trim();
     if(cmd.action==='add'){
+      // Dedup: skip if same brand+model was added in the last 30 seconds
+      const dup=inventory.find(w=>w.brand.toLowerCase()===cmd.brand.toLowerCase()&&w.model.toLowerCase()===cmd.model.toLowerCase()&&daysSince(w.buyDate)===0);
+      if(dup){return clean+' <em style="color:var(--text-faint)">(already in inventory)</em>';}
+      if(!cmd.buyPrice||cmd.buyPrice<100){return clean+' <em style="color:var(--amber)">(need a valid buy price to add)</em>';}
       const mv=c24Price(cmd.brand,cmd.buyPrice,cmd.condition||'Good');
       inventory.unshift({id:nextId++,brand:cmd.brand,model:cmd.model,ref:cmd.ref||'-',year:cmd.year||'-',condition:cmd.condition||'Good',buyPrice:cmd.buyPrice,buyDate:new Date().toISOString().split('T')[0],channel:cmd.channel||'Private',market:mv,status:'In Stock',soldPrice:null,soldDate:null});
       saveInv();renderAll();showToast(`${cmd.brand} ${cmd.model} added`);
