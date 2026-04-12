@@ -504,6 +504,20 @@ body::before{
   color:var(--text-faint);transition:all var(--transition);
 }
 .img-btn:hover{color:var(--gold);background:var(--gold-dim)}
+.mic-btn{
+  display:flex;align-items:center;justify-content:center;
+  width:34px;height:34px;border-radius:6px;flex-shrink:0;
+  color:var(--text-faint);transition:all var(--transition);
+}
+.mic-btn:hover{color:var(--gold);background:var(--gold-dim)}
+.mic-btn.recording{
+  color:#fff;background:var(--red);
+  animation:mic-pulse 1.2s ease-in-out infinite;
+}
+@keyframes mic-pulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(232,124,124,0.5)}
+  50%{box-shadow:0 0 0 8px rgba(232,124,124,0)}
+}
 .ai-img-preview{
   padding:0.5rem 1rem;display:flex;align-items:center;gap:0.5rem;
   border-top:1px solid rgba(201,169,110,0.06);
@@ -1140,6 +1154,7 @@ body::before{
             <button class="img-btn" title="Upload watch photo" onclick="document.getElementById('ai-upload-dash').click()"><i data-lucide="camera" style="width:16px;height:16px"></i></button>
             <input type="file" id="ai-upload-dash" accept="image/*" hidden onchange="handleAIImage(this,'dash')">
             <input class="ai-input" id="ai-input-dash" placeholder="'Datejust sold for $7,400'..." onkeydown="if(event.key==='Enter')sendAI(this.value,'dash')">
+            <button class="mic-btn" id="mic-btn-dash" title="Voice input" onclick="toggleVoice('dash')"><i data-lucide="mic" style="width:16px;height:16px"></i></button>
             <button class="send-btn" onclick="sendAI(document.getElementById('ai-input-dash').value,'dash')"><i data-lucide="send" style="width:14px;height:14px;"></i></button>
           </div>
         </div>
@@ -1249,6 +1264,7 @@ body::before{
           <button class="img-btn" title="Upload watch photo" onclick="document.getElementById('ai-upload-full').click()"><i data-lucide="camera" style="width:16px;height:16px"></i></button>
           <input type="file" id="ai-upload-full" accept="image/*;capture=camera" hidden onchange="handleAIImage(this,'full')">
           <input class="ai-input" id="ai-input-full" placeholder="'Mark the Daytona sold for $18,500'..." onkeydown="if(event.key==='Enter')sendAI(this.value,'full')">
+          <button class="mic-btn" id="mic-btn-full" title="Voice input" onclick="toggleVoice('full')"><i data-lucide="mic" style="width:16px;height:16px"></i></button>
           <button class="send-btn" onclick="sendAI(document.getElementById('ai-input-full').value,'full')"><i data-lucide="send" style="width:14px;height:14px;"></i></button>
         </div>
       </div>
@@ -2709,7 +2725,85 @@ function aiRespond(msg,panel){
 let aiSending=false;
 function setAIBusy(busy){
   aiSending=busy;
-  document.querySelectorAll('.send-btn,.chip,.img-btn').forEach(b=>b.style.pointerEvents=busy?'none':'');
+  document.querySelectorAll('.send-btn,.chip,.img-btn,.mic-btn').forEach(b=>{if(!b.classList.contains('recording'))b.style.pointerEvents=busy?'none':'';});
+}
+
+// ── VOICE INPUT (Groq Whisper) ──
+let voiceRecorder=null;
+let voicePanel=null;
+let voiceChunks=[];
+
+function toggleVoice(panel){
+  if(voiceRecorder&&voiceRecorder.state==='recording'){
+    stopVoice();
+  } else {
+    startVoice(panel);
+  }
+}
+
+async function startVoice(panel){
+  const key=getGroqKey();
+  if(!key){showToast('Set your Groq API key first (AI Settings)');return;}
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    voicePanel=panel;
+    voiceChunks=[];
+    const mimeType=MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':MediaRecorder.isTypeSupported('audio/webm')?'audio/webm':'audio/mp4';
+    voiceRecorder=new MediaRecorder(stream,{mimeType});
+    voiceRecorder.ondataavailable=e=>{if(e.data.size>0)voiceChunks.push(e.data);};
+    voiceRecorder.onstop=async()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      const blob=new Blob(voiceChunks,{type:mimeType});
+      await transcribeAndSend(blob,panel);
+    };
+    voiceRecorder.start();
+    const btn=document.getElementById(`mic-btn-${panel}`);
+    if(btn){btn.classList.add('recording');btn.title='Tap to stop';}
+    showToast('Listening...');
+  }catch(e){
+    if(e.name==='NotAllowedError'){showToast('Microphone access denied');}
+    else{showToast('Mic error: '+e.message);}
+  }
+}
+
+function stopVoice(){
+  if(voiceRecorder&&voiceRecorder.state==='recording'){
+    voiceRecorder.stop();
+    const btn=document.getElementById(`mic-btn-${voicePanel}`);
+    if(btn){btn.classList.remove('recording');btn.title='Voice input';}
+  }
+}
+
+async function transcribeAndSend(blob,panel){
+  const input=document.getElementById(`ai-input-${panel}`);
+  if(input)input.placeholder='Transcribing...';
+  try{
+    const key=getGroqKey();
+    const ext=blob.type.includes('mp4')?'mp4':'webm';
+    const formData=new FormData();
+    formData.append('file',blob,`voice.${ext}`);
+    formData.append('model','whisper-large-v3-turbo');
+    formData.append('language','en');
+    const res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+key},
+      body:formData
+    });
+    if(!res.ok){
+      const err=await res.json().catch(()=>({}));
+      showToast('Transcription failed: '+(err.error?.message||res.status));
+      if(input)input.placeholder=panel==='dash'?"'Datejust sold for $7,400'...":"'Mark the Daytona sold for $18,500'...";
+      return;
+    }
+    const data=await res.json();
+    const text=(data.text||'').trim();
+    if(!text){showToast('No speech detected');if(input)input.placeholder=panel==='dash'?"'Datejust sold for $7,400'...":"'Mark the Daytona sold for $18,500'...";return;}
+    if(input)input.placeholder=panel==='dash'?"'Datejust sold for $7,400'...":"'Mark the Daytona sold for $18,500'...";
+    sendAI(text,panel);
+  }catch(e){
+    showToast('Transcription error: '+e.message);
+    if(input)input.placeholder=panel==='dash'?"'Datejust sold for $7,400'...":"'Mark the Daytona sold for $18,500'...";
+  }
 }
 
 async function sendAI(msg,panel){
