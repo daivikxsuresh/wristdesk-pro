@@ -1778,13 +1778,30 @@ async function signOut(){
   showToast('Signed out — using guest data');
 }
 
+function setSyncStatus(state){
+  const badge=document.getElementById('page-badge');
+  if(!badge) return;
+  if(!currentUser){badge.textContent='GUEST';badge.style.background='var(--gold-dim)';badge.style.color='var(--gold)';return;}
+  if(state==='ok'){
+    badge.textContent='SYNCED';badge.style.background='var(--green-dim)';badge.style.color='var(--green)';
+    const sl=document.getElementById('sidebar-sync-status');
+    if(sl){sl.style.color='var(--green)';sl.innerHTML='<div style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0"></div> Cloud synced';}
+  } else if(state==='syncing'){
+    badge.textContent='SYNCING';badge.style.background='var(--amber-dim)';badge.style.color='var(--amber)';
+    const sl=document.getElementById('sidebar-sync-status');
+    if(sl){sl.style.color='var(--amber)';sl.innerHTML='<div style="width:6px;height:6px;border-radius:50%;background:var(--amber);flex-shrink:0"></div> Syncing...';}
+  } else if(state==='error'){
+    badge.textContent='SYNC ERR';badge.style.background='var(--red-dim)';badge.style.color='var(--red)';
+    const sl=document.getElementById('sidebar-sync-status');
+    if(sl){sl.style.color='var(--red)';sl.innerHTML='<div style="width:6px;height:6px;border-radius:50%;background:var(--red);flex-shrink:0"></div> Sync failed — tap to retry';}
+  }
+}
+
 function updateAuthUI(){
-  // Mobile auth indicator
   const dot=document.getElementById('mobile-auth-dot');
   if(dot) dot.style.display=currentUser?'block':'none';
-  // Page badge
-  const badge=document.getElementById('page-badge');
-  if(badge){badge.textContent=currentUser?'SYNCED':'GUEST';badge.style.background=currentUser?'var(--green-dim)':'var(--gold-dim)';badge.style.color=currentUser?'var(--green)':'var(--gold)';}
+  // Badge starts as GUEST; setSyncStatus() updates it once sync actually completes
+  setSyncStatus(currentUser?'syncing':'guest');
   const footer=document.getElementById('sidebar-auth');
   if(!footer) return;
   if(currentUser){
@@ -1799,7 +1816,7 @@ function updateAuthUI(){
         <button onclick="openProfileModal()" style="flex:1;padding:0.4rem;font-size:var(--text-xs);background:var(--navy-light);color:var(--text-secondary);border:1px solid var(--navy-lighter);border-radius:6px;cursor:pointer;font-family:var(--font-body)">Edit Profile</button>
         <button onclick="signOut()" style="flex:1;padding:0.4rem;font-size:var(--text-xs);background:var(--navy-light);color:var(--text-secondary);border:1px solid var(--navy-lighter);border-radius:6px;cursor:pointer;font-family:var(--font-body)">Sign Out</button>
       </div>
-      <div style="font-size:9px;color:var(--green);display:flex;align-items:center;gap:4px"><div style="width:6px;height:6px;border-radius:50%;background:var(--green)"></div> Cloud synced</div>`;
+      <div id="sidebar-sync-status" style="font-size:9px;color:var(--text-faint);display:flex;align-items:center;gap:4px">Syncing...</div>`;
   } else {
     footer.innerHTML=`
       <button onclick="openAuthModal()" style="width:100%;padding:0.5rem;font-size:var(--text-xs);background:linear-gradient(135deg,var(--gold),var(--gold-bright));color:var(--navy-deep);border:none;border-radius:6px;cursor:pointer;font-weight:600;font-family:var(--font-body)">Sign In / Sign Up</button>
@@ -1936,9 +1953,18 @@ const DEFAULT_INV=[
 ];
 
 function loadInvLocal(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}return JSON.parse(JSON.stringify(DEFAULT_INV));}
+// Raw read — returns null if nothing in localStorage (no DEFAULT_INV fallback)
+function loadInvLocalRaw(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}return null;}
+function isDefaultInventory(inv){
+  if(!inv||inv.length!==DEFAULT_INV.length)return false;
+  return inv[0]&&inv[0].brand===DEFAULT_INV[0].brand&&inv[0].model===DEFAULT_INV[0].model&&inv[0].buyPrice===DEFAULT_INV[0].buyPrice;
+}
 
 async function loadInvCloud(){
   if(!currentUser||!supa) return;
+  // Snapshot guest/local data BEFORE any cloud operation can overwrite localStorage
+  const guestSnap=loadInvLocalRaw();
+  setSyncStatus('syncing');
   try{
     const{data,error}=await supa.from('watches').select('*').eq('user_id',currentUser.id).order('id');
     if(error) throw error;
@@ -1949,36 +1975,74 @@ async function loadInvCloud(){
         channel:w.channel||'', market:w.market_price||0, status:w.status||'In Stock',
         soldPrice:w.sold_price, soldDate:w.sold_date, supaId:w.id
       }));
+      setSyncStatus('ok');
     } else {
-      // New user — start with empty inventory
-      inventory=[];
+      // Cloud is empty — migrate guest/local data if it exists and isn't just the sample data
+      if(guestSnap&&guestSnap.length>0&&!isDefaultInventory(guestSnap)){
+        inventory=guestSnap;
+        await syncToCloud(); // this sets setSyncStatus internally
+        showToast('Local data synced to your account — '+inventory.length+' watches');
+      } else {
+        inventory=[];
+        setSyncStatus('ok');
+      }
     }
-    nextId=Math.max(...inventory.map(w=>w.id),0)+1;
+    nextId=Math.max(0,...inventory.map(w=>typeof w.id==='number'?w.id:0))+1;
     try{localStorage.setItem(STORAGE_KEY,JSON.stringify(inventory));}catch(e){}
     renderAll();
-  }catch(e){console.warn('Cloud load failed, using local:',e);}
+  }catch(e){
+    console.warn('Cloud load failed, using local:',e);
+    setSyncStatus('error');
+    showToast('Sync error — using local data');
+    if(guestSnap) inventory=guestSnap;
+    renderAll();
+  }
 }
 
 function saveInv(){
-  // Always save to localStorage (offline cache)
   try{localStorage.setItem(STORAGE_KEY,JSON.stringify(inventory));}catch(e){}
-  // If logged in, sync to Supabase
   if(currentUser) syncToCloud();
 }
 
 async function syncToCloud(){
   if(!currentUser||!supa) return;
+  setSyncStatus('syncing');
   try{
-    // Delete all user's watches and re-insert (simple full sync)
-    await supa.from('watches').delete().eq('user_id',currentUser.id);
-    const rows=inventory.map(w=>({
-      user_id:currentUser.id, brand:w.brand, model:w.model, ref_number:w.ref,
-      year:w.year, condition:w.condition, buy_price:w.buyPrice, buy_date:w.buyDate,
-      channel:w.channel, market_price:w.market, status:w.status,
-      sold_price:w.soldPrice, sold_date:w.soldDate
-    }));
-    if(rows.length>0) await supa.from('watches').insert(rows);
-  }catch(e){console.warn('Cloud sync failed:',e);}
+    // Get existing cloud IDs so we can clean up deleted watches
+    const{data:existingRows}=await supa.from('watches').select('id').eq('user_id',currentUser.id);
+    const existingIds=new Set((existingRows||[]).map(r=>r.id));
+
+    if(inventory.length>0){
+      const rows=inventory.map(w=>({
+        // Include supaId as 'id' so upsert can match on conflict instead of deleting
+        ...(w.supaId?{id:w.supaId}:{}),
+        user_id:currentUser.id, brand:w.brand, model:w.model, ref_number:w.ref||'',
+        year:w.year||'', condition:w.condition||'Good', buy_price:w.buyPrice,
+        buy_date:w.buyDate||null, channel:w.channel||'', market_price:w.market||0,
+        status:w.status||'In Stock', sold_price:w.soldPrice||null, sold_date:w.soldDate||null
+      }));
+      const{data:upserted,error}=await supa.from('watches').upsert(rows,{onConflict:'id'}).select('id');
+      if(error) throw error;
+      // Write back Supabase-assigned IDs so future upserts can match correctly
+      if(upserted){
+        upserted.forEach((row,i)=>{if(inventory[i]){inventory[i].supaId=row.id;}});
+        try{localStorage.setItem(STORAGE_KEY,JSON.stringify(inventory));}catch(e){}
+      }
+    }
+
+    // Delete cloud rows that no longer exist locally
+    const localSupaIds=new Set(inventory.filter(w=>w.supaId).map(w=>w.supaId));
+    const toDelete=[...existingIds].filter(id=>!localSupaIds.has(id));
+    if(toDelete.length>0){
+      await supa.from('watches').delete().in('id',toDelete);
+    }
+
+    setSyncStatus('ok');
+  }catch(e){
+    console.warn('Cloud sync failed:',e);
+    setSyncStatus('error');
+    showToast('Sync failed — data saved locally. Will retry on next change.');
+  }
 }
 
 // ── SETTINGS CLOUD SYNC ──
