@@ -1063,6 +1063,66 @@ body::before{
   .m-watch-card-row{grid-template-columns:1fr 1fr}
 }
 
+/* ── GUEST BANNER ── */
+#guest-banner{
+  display:none;flex-shrink:0;
+  background:linear-gradient(90deg,rgba(201,169,110,0.09),rgba(201,169,110,0.04));
+  border-bottom:1px solid rgba(201,169,110,0.14);
+  padding:0.5rem 1.5rem;
+  align-items:center;gap:0.75rem;
+  font-size:var(--text-xs);position:relative;z-index:9;
+}
+#guest-banner.show{display:flex}
+.guest-banner-msg{flex:1;color:var(--text-secondary);line-height:1.4}
+.guest-banner-msg strong{color:var(--gold)}
+.guest-banner-signin{
+  padding:0 0.85rem;height:26px;
+  background:linear-gradient(135deg,var(--gold),#b8944a);
+  color:var(--navy-deep);border-radius:5px;
+  font-size:0.7rem;font-weight:700;font-family:var(--font-body);
+  white-space:nowrap;flex-shrink:0;transition:all var(--transition);
+}
+.guest-banner-signin:hover{box-shadow:0 2px 10px rgba(201,169,110,0.3)}
+.guest-banner-dismiss{
+  width:22px;height:22px;display:flex;align-items:center;justify-content:center;
+  color:var(--text-faint);font-size:14px;border-radius:4px;flex-shrink:0;
+  transition:all var(--transition);
+}
+.guest-banner-dismiss:hover{background:var(--navy-light);color:var(--text-primary)}
+
+/* ── DEAL CHECK ── */
+.deal-verdict{
+  border-radius:10px;padding:1.25rem 1.5rem;margin-bottom:1rem;
+  border:1px solid transparent;position:relative;overflow:hidden;
+}
+.deal-verdict::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+}
+.deal-buy{background:var(--green-dim);border-color:rgba(111,207,151,0.2)}
+.deal-buy::before{background:linear-gradient(90deg,transparent,var(--green),transparent)}
+.deal-negotiate{background:var(--amber-dim);border-color:rgba(232,196,77,0.2)}
+.deal-negotiate::before{background:linear-gradient(90deg,transparent,var(--amber),transparent)}
+.deal-pass{background:var(--red-dim);border-color:rgba(232,124,124,0.2)}
+.deal-pass::before{background:linear-gradient(90deg,transparent,var(--red),transparent)}
+.deal-verdict-label{
+  font-size:0.62rem;text-transform:uppercase;letter-spacing:0.15em;
+  font-weight:700;margin-bottom:0.3rem;font-family:var(--font-body);
+}
+.deal-verdict-title{
+  font-family:var(--font-display);font-size:var(--text-2xl);
+  font-weight:400;letter-spacing:0.02em;line-height:1;margin-bottom:0.5rem;
+}
+.deal-verdict-msg{font-size:var(--text-sm);line-height:1.5}
+.deal-price-grid{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.65rem;margin-bottom:1rem;
+}
+.deal-spread-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0.65rem 0.85rem;border-radius:8px;
+  background:var(--navy-mid);border:1px solid rgba(201,169,110,0.06);
+  font-size:var(--text-sm);margin-bottom:0.75rem;
+}
+
 /* Hide mobile elements on desktop */
 .mobile-tabbar{display:none}
 .mobile-menu-btn{display:none}
@@ -1134,6 +1194,9 @@ body::before{
       <i data-lucide="check-circle-2"></i> Sold
     </button>
     <div class="nav-section">Tools</div>
+    <button class="nav-item" data-view="dealcheck" onclick="switchView('dealcheck',this)">
+      <i data-lucide="scale"></i> Deal Checker
+    </button>
     <button class="nav-item" data-view="lookup" onclick="switchView('lookup',this)">
       <i data-lucide="search"></i> Price Lookup
     </button>
@@ -1176,6 +1239,13 @@ body::before{
       <button class="icon-btn mobile-auth-btn" id="mobile-auth-btn" title="Account" onclick="currentUser?openAccountMenu():openAuthModal()" style="position:relative"><i data-lucide="user" style="width:16px;height:16px"></i><span id="mobile-auth-dot" style="display:none;position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--green)"></span></button>
     </div>
   </header>
+
+  <!-- GUEST BANNER -->
+  <div id="guest-banner">
+    <span class="guest-banner-msg" id="guest-banner-msg"><strong>Demo mode</strong> — you're viewing a sample portfolio. Sign in to track your real watches and sync across devices.</span>
+    <button class="guest-banner-signin" onclick="openAuthModal()">Sign In Free</button>
+    <button class="guest-banner-dismiss" onclick="dismissGuestBanner()" title="Dismiss">✕</button>
+  </div>
 
   <!-- DASHBOARD -->
   <div class="view active" id="view-dashboard">
@@ -1291,6 +1361,28 @@ body::before{
     </div>
   </div>
 
+  <!-- DEAL CHECK -->
+  <div class="view" id="view-dealcheck">
+    <div class="view-scroll">
+      <div class="card" style="max-width:560px;margin:0 auto">
+        <div class="card-header">
+          <span class="card-title">Deal Checker</span>
+          <span style="font-size:var(--text-xs);color:var(--gold)">Is the asking price worth it?</span>
+        </div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">Brand</label><input class="form-input" id="dc-brand" placeholder="e.g. Rolex, Tudor..."></div>
+            <div class="form-group"><label class="form-label">Model / Reference</label><input class="form-input" id="dc-model" placeholder="e.g. Submariner 124060"></div>
+            <div class="form-group"><label class="form-label">Condition</label><select class="form-input" id="dc-condition"><option>Unworn</option><option>Like New</option><option selected>Good</option><option>Fair</option></select></div>
+            <div class="form-group"><label class="form-label">Asking Price ($)</label><input class="form-input" id="dc-asking" type="number" placeholder="12500" onkeydown="if(event.key==='Enter')runDealCheck()"></div>
+          </div>
+          <button class="btn-primary" style="width:100%;margin-top:0.75rem" onclick="runDealCheck()"><span id="dc-btn-text">Check This Deal</span></button>
+          <div id="dc-result" style="margin-top:1.25rem"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- IDENTIFY -->
   <div class="view" id="view-identify">
     <div class="view-scroll">
@@ -1363,7 +1455,7 @@ body::before{
   <button class="mobile-tab" data-view="inventory" onclick="mobileNav('inventory',this)"><i data-lucide="package"></i>Inventory</button>
   <button class="mobile-tab" data-view="sold" onclick="mobileNav('sold',this)"><i data-lucide="check-circle-2"></i>Sold</button>
   <button class="mobile-tab" data-view="ai" onclick="mobileNav('ai',this)"><i data-lucide="bot"></i>AI</button>
-  <button class="mobile-tab" data-view="lookup" onclick="mobileNav('lookup',this)"><i data-lucide="search"></i>Lookup</button>
+  <button class="mobile-tab" data-view="dealcheck" onclick="mobileNav('dealcheck',this)"><i data-lucide="scale"></i>Deal</button>
 </nav>
 </div>
 
@@ -1820,6 +1912,7 @@ function updateAuthUI(){
   if(dot) dot.style.display=currentUser?'block':'none';
   // Badge starts as GUEST; setSyncStatus() updates it once sync actually completes
   setSyncStatus(currentUser?'syncing':'guest');
+  updateGuestBanner();
   const footer=document.getElementById('sidebar-auth');
   if(!footer) return;
   if(currentUser){
@@ -2242,6 +2335,80 @@ function openDeleteModal(id){deleteTarget=inventory.find(w=>w.id===id);if(!delet
 function closeDeleteModal(){document.getElementById('delete-modal').classList.remove('open');deleteTarget=null;}
 function confirmDelete(){if(!deleteTarget)return;const n=`${deleteTarget.brand} ${deleteTarget.model}`;inventory=inventory.filter(w=>w.id!==deleteTarget.id);closeDeleteModal();saveInv();renderAll();showToast(`${n} removed`);}
 function toggleListed(id){const w=inventory.find(x=>x.id===id);if(!w)return;w.status=w.status==='Listed'?'In Stock':'Listed';saveInv();renderAll();showToast(`${w.brand} ${w.model} -> ${w.status}`);}
+
+// ── DEAL CHECKER ──
+function runDealCheck(){
+  const brand=document.getElementById('dc-brand').value.trim();
+  const model=document.getElementById('dc-model').value.trim();
+  const cond=document.getElementById('dc-condition').value;
+  const asking=parseFloat(document.getElementById('dc-asking').value);
+  if(!brand||!model||!asking||asking<50){showToast('Fill in brand, model & asking price');return;}
+  const btn=document.getElementById('dc-btn-text');
+  const result=document.getElementById('dc-result');
+  btn.textContent='Checking...';
+  result.innerHTML=`<div class="fetch-row"><div class="fetch-spinner"></div>Querying Chrono24...</div>`;
+  setTimeout(()=>{
+    const d=lookupC24(brand,model,cond);
+    const spread=d.fair-asking;
+    const spreadPct=(spread/d.fair*100).toFixed(1);
+    const askVsLow=asking-d.low;
+    let vClass,vLabel,vColor,vTitle,vMsg;
+    if(asking<=d.low){
+      vClass='deal-buy';vColor='var(--green)';vLabel='Verdict';vTitle='BUY';
+      vMsg=`Asking is <strong>${fmt(d.fair-asking)}</strong> below fair value (${Math.abs(spreadPct)}% discount). Strong deal — room to flip with margin.`;
+    } else if(asking<=d.fair){
+      vClass='deal-negotiate';vColor='var(--amber)';vLabel='Verdict';vTitle='NEGOTIATE';
+      const target=Math.round(asking*0.93/100)*100;
+      vMsg=`Asking is within range but above the low. Try to get it to <strong>${fmt(target)}</strong> or lower for a comfortable flip margin.`;
+    } else {
+      vClass='deal-pass';vColor='var(--red)';vLabel='Verdict';vTitle='PASS';
+      vMsg=`Asking is <strong>${fmt(asking-d.fair)}</strong> above fair value (${Math.abs(spreadPct)}% over). You'd be buying into a loss — pass or walk away.`;
+    }
+    result.innerHTML=`
+      <div class="deal-verdict ${vClass}">
+        <div class="deal-verdict-label" style="color:${vColor}">${vLabel}</div>
+        <div class="deal-verdict-title" style="color:${vColor}">${vTitle}</div>
+        <div class="deal-verdict-msg" style="color:var(--text-secondary)">${vMsg}</div>
+      </div>
+      <div class="deal-price-grid">
+        <div class="kpi-card" style="background:var(--navy-mid)"><div class="kpi-label">C24 Low</div><div class="kpi-value" style="font-size:1rem">${fmt(d.low)}</div></div>
+        <div class="kpi-card" style="background:var(--gold-dim);border-color:rgba(201,169,110,0.2)"><div class="kpi-label">Fair Value</div><div class="kpi-value" style="font-size:1rem;color:var(--gold)">${fmt(d.fair)}</div></div>
+        <div class="kpi-card" style="background:var(--navy-mid)"><div class="kpi-label">C24 High</div><div class="kpi-value" style="font-size:1rem">${fmt(d.high)}</div></div>
+      </div>
+      <div class="deal-spread-row">
+        <span style="color:var(--text-faint)">Your asking price</span>
+        <span style="font-family:var(--font-mono);color:${asking<=d.fair?'var(--text-primary)':'var(--red)'}">${fmt(asking)}</span>
+      </div>
+      <div class="deal-spread-row">
+        <span style="color:var(--text-faint)">Spread vs fair value</span>
+        <span style="font-family:var(--font-mono);color:${spread>=0?'var(--green)':'var(--red)'}">${spread>=0?'+':''}${fmt(spread)} (${spreadPct}%)</span>
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem">
+        <button class="btn-primary" onclick="document.getElementById('f-brand').value='${brand}';document.getElementById('f-model').value='${model}';openAddModal()" style="flex:1;font-size:var(--text-xs)">+ Add to Collection</button>
+        <button class="btn-ghost" onclick="document.getElementById('dc-result').innerHTML='';document.getElementById('dc-brand').value='';document.getElementById('dc-model').value='';document.getElementById('dc-asking').value=''" style="font-size:var(--text-xs)">Clear</button>
+      </div>`;
+    btn.textContent='Check This Deal';
+  },1000);
+}
+
+// ── GUEST BANNER ──
+let guestBannerDismissed=false;
+function dismissGuestBanner(){
+  guestBannerDismissed=true;
+  document.getElementById('guest-banner').classList.remove('show');
+}
+function updateGuestBanner(){
+  const banner=document.getElementById('guest-banner');
+  if(!banner) return;
+  if(currentUser||guestBannerDismissed){banner.classList.remove('show');return;}
+  const msg=document.getElementById('guest-banner-msg');
+  if(isDefaultInventory(inventory)){
+    msg.innerHTML='<strong>Demo mode</strong> — you\'re viewing a sample portfolio. Sign in to track your real watches and sync across devices.';
+  } else {
+    msg.innerHTML='<strong>Guest mode</strong> — your data is saved locally. Sign in to sync across all your devices.';
+  }
+  banner.classList.add('show');
+}
 
 // ── PRICE LOOKUP ──
 function runLookup(){
@@ -3149,9 +3316,9 @@ function refreshPrices(){showToast('Refreshing...');inventory.filter(w=>w.status
 function exportCSV(){const h='Brand,Model,Ref,Year,Condition,Buy Price,Buy Date,Channel,C24 Value,Status,Sold Price,Sold Date,Days Held,P&L\n';const rows=inventory.map(w=>`"${w.brand}","${w.model}","${w.ref}","${w.year}","${w.condition}",${w.buyPrice},${w.buyDate},"${w.channel}",${w.market},"${w.status}",${w.soldPrice||''},${w.soldDate||''},${holdDays(w)},${w.status==='Sold'?w.soldPrice-w.buyPrice:w.market-w.buyPrice}`).join('\n');const a=document.createElement('a');a.href='data:text/csv,'+encodeURIComponent(h+rows);a.download='wristdesk-pro.csv';a.click();showToast('CSV exported');}
 function showToast(msg){const t=document.createElement('div');t.className='toast';t.innerHTML=msg;document.getElementById('toast-container').appendChild(t);setTimeout(()=>t.remove(),3500);}
 
-const viewTitles={dashboard:'Dashboard',inventory:'Inventory',sold:'Sold Watches',lookup:'Price Lookup',identify:'Watch Identifier',ai:'AI Assistant',export:'Export'};
-const viewBadges={dashboard:'LIVE',inventory:'ALL',sold:'REALIZED',lookup:'CHRONO24',identify:'VISION',ai:'NLP',export:'CSV'};
-function switchView(v,btn){document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));document.getElementById('view-'+v).classList.add('active');document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));if(btn)btn.classList.add('active');document.getElementById('page-title').textContent=viewTitles[v];renderAll();}
+const viewTitles={dashboard:'Dashboard',inventory:'Inventory',sold:'Sold Watches',dealcheck:'Deal Checker',lookup:'Price Lookup',identify:'Watch Identifier',ai:'AI Assistant',export:'Export'};
+const viewBadges={dashboard:'LIVE',inventory:'ALL',sold:'REALIZED',dealcheck:'BUY / PASS',lookup:'CHRONO24',identify:'VISION',ai:'NLP',export:'CSV'};
+function switchView(v,btn){document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));document.getElementById('view-'+v).classList.add('active');document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));if(btn)btn.classList.add('active');document.getElementById('page-title').textContent=viewTitles[v]||v;const badge=document.getElementById('page-badge');if(badge&&!currentUser){badge.textContent='GUEST';}else if(badge&&viewBadges[v]){badge.textContent=viewBadges[v];}renderAll();}
 
 // ── EXPORT VIEW ──
 function exportFiltered(filter){
@@ -3231,6 +3398,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   renderAll();
   updateAIStatus();
   updateAuthUI();
+  updateGuestBanner();
   updateSmartChips();
   const aiReady=!!getGroqKey();
   const uname=getUserName();
