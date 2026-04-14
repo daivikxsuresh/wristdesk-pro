@@ -545,6 +545,17 @@ body::before{
   cursor:pointer;transition:all var(--transition);background:none;
 }
 .chip:hover{border-color:var(--gold);color:var(--gold);background:var(--gold-dim)}
+.chip.chip-alert{border-color:rgba(232,124,124,0.3);color:var(--red)}
+.chip.chip-alert:hover{border-color:var(--red);background:var(--red-dim)}
+/* ── AI STREAMING CURSOR ── */
+.ai-cursor{
+  display:inline-block;width:2px;height:0.85em;
+  background:var(--gold);margin-left:1px;
+  vertical-align:text-bottom;
+  animation:ai-blink 0.75s steps(1) infinite;
+}
+@keyframes ai-blink{0%,100%{opacity:1}50%{opacity:0}}
+.stream-bubble{min-height:1.2em}
 
 /* ── MODALS ── */
 .modal-overlay,.sold-overlay,.delete-overlay{
@@ -1203,7 +1214,7 @@ body::before{
             </span>
           </div>
           <div class="ai-messages" id="ai-messages-dash"></div>
-          <div class="quick-chips">
+          <div class="quick-chips" id="quick-chips-dash">
             <button class="chip" onclick="sendAI('How many watches in stock?','dash')">In stock?</button>
             <button class="chip" onclick="sendAI('What is my total profit?','dash')">Profit?</button>
             <button class="chip" onclick="sendAI('Which watch has been sitting longest?','dash')">Slowest?</button>
@@ -1311,8 +1322,7 @@ body::before{
           <span style="display:flex;align-items:center;gap:6px;"><span style="font-size:var(--text-xs);color:var(--gold)">Groq · Llama 3.3</span><button class="icon-btn" title="Clear chat" onclick="clearChat('full')" style="width:26px;height:26px"><i data-lucide="trash" style="width:12px;height:12px"></i></button><button class="icon-btn" title="AI Settings" onclick="openAISettings()" style="width:26px;height:26px"><i data-lucide="settings" style="width:13px;height:13px"></i></button></span>
         </div>
         <div class="ai-messages" id="ai-messages-full" style="flex:1;max-height:none;min-height:0;"></div>
-        <div class="quick-chips">
-          <button class="chip" onclick="sendAI('Mark the AP Royal Oak as sold for $32,000','full')">Mark sold</button>
+        <div class="quick-chips" id="quick-chips-full">
           <button class="chip" onclick="sendAI('What watches have been in stock over 30 days?','full')">Slow movers</button>
           <button class="chip" onclick="sendAI('What is my total realized profit?','full')">Total profit</button>
           <button class="chip" onclick="sendAI('Add a Rolex Submariner bought for $12,500','full')">Add watch</button>
@@ -1410,11 +1420,19 @@ body::before{
 <div class="modal-overlay" id="ai-settings-modal" onclick="if(event.target===this)closeAISettings()">
   <div class="modal" style="width:420px">
     <div class="modal-title">AI Settings</div>
-    <div class="form-group" style="margin-bottom:1rem">
-      <label class="form-label">Groq API Key</label>
-      <input class="form-input" id="groq-key-input" type="password" placeholder="gsk_..." style="font-family:var(--font-mono)">
-      <div style="font-size:var(--text-xs);color:var(--text-faint);margin-top:0.4rem">
-        Free at <a href="https://console.groq.com/keys" target="_blank" style="color:var(--gold)">console.groq.com/keys</a> — 14,400 req/day. Key stays in your browser only.
+    <!-- Shown when master key is embedded -->
+    <div id="master-key-notice" style="display:none;background:var(--green-dim);border:1px solid rgba(111,207,151,0.2);border-radius:8px;padding:0.7rem 0.85rem;margin-bottom:1rem">
+      <div style="font-size:var(--text-xs);color:var(--green);font-weight:600;margin-bottom:2px">Powered by WristDesk AI</div>
+      <div style="font-size:var(--text-xs);color:var(--text-secondary)">Full AI access is enabled. No API key needed — you're good to go.</div>
+    </div>
+    <!-- Shown when no master key — user must provide their own -->
+    <div id="user-key-section">
+      <div class="form-group" style="margin-bottom:1rem">
+        <label class="form-label">Groq API Key</label>
+        <input class="form-input" id="groq-key-input" type="password" placeholder="gsk_..." style="font-family:var(--font-mono)">
+        <div style="font-size:var(--text-xs);color:var(--text-faint);margin-top:0.4rem">
+          Free at <a href="https://console.groq.com/keys" target="_blank" style="color:var(--gold)">console.groq.com/keys</a> — 14,400 req/day. Key stays in your browser only.
+        </div>
       </div>
     </div>
     <div class="form-group" style="margin-bottom:1rem">
@@ -1427,7 +1445,7 @@ body::before{
     </div>
     <div id="ai-connection-status" style="font-size:var(--text-xs);color:var(--text-faint);margin-bottom:1rem"></div>
     <div class="modal-footer">
-      <button class="btn-ghost" onclick="testGroqKey()">Test Connection</button>
+      <button class="btn-ghost" id="test-key-btn" onclick="testGroqKey()">Test Connection</button>
       <button class="btn-ghost" onclick="closeAISettings()">Cancel</button>
       <button class="btn-primary" onclick="saveAISettings()">Save</button>
     </div>
@@ -2308,44 +2326,68 @@ function resolveAlias(input){
 
 // ── GROQ AI ENGINE ──
 const GROQ_KEY_STORAGE='wristdesk_groq_key';
+// Master key — users get full AI without any setup. Replace '' with your Groq key.
+const MASTER_GROQ_KEY='';
 let aiHistory=[];
-function getGroqKey(){ return localStorage.getItem(GROQ_KEY_STORAGE)||''; }
+function getGroqKey(){ return localStorage.getItem(GROQ_KEY_STORAGE)||MASTER_GROQ_KEY; }
+function hasMasterKey(){ return !!MASTER_GROQ_KEY; }
 function setGroqKey(k){ localStorage.setItem(GROQ_KEY_STORAGE,k); }
 
 function buildSystemPrompt(){
   const k=calcKPIs();
   const active=inventory.filter(w=>w.status!=='Sold');
   const sold=inventory.filter(w=>w.status==='Sold');
-  const invSummary=active.map(w=>`- [id:${w.id}] ${w.brand} ${w.model} (${w.ref}): bought ${fmt(w.buyPrice)} on ${w.buyDate}, C24 value ${fmt(w.market)}, status: ${w.status}, ${daysSince(w.buyDate)}d held, condition: ${w.condition}`).join('\n');
-  const soldSummary=sold.map(w=>`- ${w.brand} ${w.model} (${w.ref}): bought ${fmt(w.buyPrice)}, sold ${fmt(w.soldPrice)} on ${w.soldDate}, profit: ${fmt(w.soldPrice-w.buyPrice)}`).join('\n');
-  return `You are WristDesk AI — an expert watch inventory assistant AND research tool. Talk like a knowledgeable fellow watch dealer. Keep responses SHORT (1-3 sentences max for queries, 1 sentence + cmd for actions). For research questions, you can be more detailed (up to 4-5 sentences).
+  const slowMovers=active.filter(w=>daysSince(w.buyDate)>30);
+  const bestMargin=active.reduce((best,w)=>(!best||(w.market-w.buyPrice)>(best.market-best.buyPrice)?w:best),null);
+  const invSummary=active.map(w=>{
+    const d=daysSince(w.buyDate);
+    const pnl=w.market-w.buyPrice;
+    const alert=d>45?'⚠️ SLOW ':d>30?'🕐 ':''
+    return `- [id:${w.id}] ${alert}${w.brand} ${w.model} (${w.ref}): bought ${fmt(w.buyPrice)}, C24 ${fmt(w.market)}, P&L ${pnl>=0?'+':''}${fmt(pnl)}, ${d}d held, status: ${w.status}`;
+  }).join('\n');
+  const soldSummary=sold.slice(-8).map(w=>`- ${w.brand} ${w.model}: bought ${fmt(w.buyPrice)} → sold ${fmt(w.soldPrice)} (+${fmt(w.soldPrice-w.buyPrice)})`).join('\n');
+  const slowAlert=slowMovers.length?`\nALERT: ${slowMovers.length} watch${slowMovers.length>1?'es':''} over 30 days: ${slowMovers.map(w=>`${w.brand} ${w.model} (${daysSince(w.buyDate)}d)`).join(', ')}. Flag for discounting.`:'';
+  const bestAlert=bestMargin?`\nBEST HOLD: ${bestMargin.brand} ${bestMargin.model} at +${fmt(bestMargin.market-bestMargin.buyPrice)} unrealized.`:'';
+  return `You are WristDesk AI — a razor-sharp watch dealer assistant built for speed. You run a fast-paced grey market operation.
 
-You also serve as a watch research assistant: market trends, buy/sell recommendations, what to look for when buying, fair prices, investment potential, comparisons between watches.
+SPEED RULES (critical):
+- For inventory actions (add/sell/delete): 1 sentence max + command block. No filler.
+- For quick queries (stock count, profit, margin): 1-2 sentences. Numbers only.
+- For research (what to buy, market trends, valuations): 2-4 sentences max.
+- NEVER say "Sure!", "Great!", "Of course!", "I'd be happy to" or any filler opener.
+- Start every response with the answer, not a preamble.
 
-The user may speak casually or use voice input — handle typos, slang ("copped", "picked up", "flipped"), shorthand ("12k" = $12,000), and watch nicknames naturally. When they upload a photo, identify the watch and offer research insights.
+MARKET CONTEXT (Q1-Q2 2026):
+- Rolex: Sports refs stable, ADs normalizing. Sub, GMT, Daytona hold well.
+- Patek 5711/5726 Nautilus: premium holding at 2-3x retail. 5726 undervalued vs 5711.
+- AP RO: 15500ST/15202 strong. Entry 15400 softened ~10% from peak.
+- Tudor BB58: solid sub-$5k flip, fast turns. Navy dial at slight premium.
+- Omegas: Speedy Moonwatch retail-ish. Aqua Terra/Seamaster soft market.
+- General trend: grey market spread compressing. Focus on fast turns under 30d.
 
-PORTFOLIO: ${k.active} active (${fmt(k.totalMarket)} value, ${fmt(k.totalCost)} cost, ${k.unrealized>=0?'+':''}${fmt(k.unrealized)} unrealized) | ${k.sold} sold (+${fmt(k.realized)} realized) | Avg hold: ${k.avgDays}d
+PORTFOLIO: ${k.active} active (${fmt(k.totalMarket)} value | ${fmt(k.totalCost)} cost | ${k.unrealized>=0?'+':''}${fmt(k.unrealized)} unrealized) | ${k.sold} sold | +${fmt(k.realized)} realized | Avg hold: ${k.avgDays}d${slowAlert}${bestAlert}
 
-INVENTORY:
-${invSummary||'(empty)'}
-${soldSummary?'SOLD:\n'+soldSummary:''}
+LIVE INVENTORY:
+${invSummary||'(empty — add your first watch)'}
+${soldSummary?'\nRECENT SOLD:\n'+soldSummary:''}
 
-NICKNAMES: BB58=Tudor Black Bay 58, Pepsi=GMT BLRO, Batman=GMT BLNR, Hulk=Sub 116610LV, Panda=Daytona white, Speedy=Speedmaster, Nautilus=PP Nautilus, Royal Oak=AP RO. Always resolve to full names.
+SLANG: "copped"=bought, "flipped"=sold, "brick"=lost money, "free"=bought at cost basis after partial sale, "grey"=secondary market, "AD"=authorized dealer. Handle voice input with typos and shorthand naturally ("12k"=$12,000, "sub"=Submariner, etc).
 
-COMMANDS — include ONE at the END of your message ONLY when executing:
-Add: \`\`\`cmd{"action":"add","brand":"Tudor","model":"Black Bay Fifty-Eight","ref":"M79030N","condition":"Good","buyPrice":3800}\`\`\`
+NICKNAMES → resolve silently: BB58=Tudor Black Bay 58, Pepsi=GMT-Master II 126710BLRO, Batman=GMT-Master II 126710BLNR, Hulk=Submariner 116610LV, Kermit=Submariner 16610LV, Panda=Daytona 116500LN white, Speedy=Omega Speedmaster Moonwatch, Nautilus=Patek Philippe Nautilus 5711, Aquanaut=Patek Philippe Aquanaut 5167, Royal Oak=AP Royal Oak 15500ST, Jumbo=AP Royal Oak 15202, Snowflake=Tudor Black Bay 32mm, Bluesy=Rolex Datejust 126334, Polar=Rolex Datejust 126334 silver.
+
+COMMANDS — append ONE at message END only when executing an action:
+Add: \`\`\`cmd{"action":"add","brand":"Tudor","model":"Black Bay 58","ref":"M79030N","condition":"Good","buyPrice":3800}\`\`\`
 Sell: \`\`\`cmd{"action":"sell","id":ID,"soldPrice":5000}\`\`\`
 Delete: \`\`\`cmd{"action":"delete","id":ID}\`\`\`
-List/unlist: \`\`\`cmd{"action":"list","id":ID}\`\`\`
+List/Unlist: \`\`\`cmd{"action":"list","id":ID}\`\`\`
 Update: \`\`\`cmd{"action":"update","id":ID,"buyPrice":3750}\`\`\`
 
-RULES:
-1. For "add": MUST have brand+model+buyPrice. If ANY is missing, ask — NO cmd block.
-2. NEVER show hypothetical/example cmd blocks. They execute immediately.
-3. NEVER put a cmd block in a question or clarification.
-4. One cmd block per message max.
-5. Use exact watch IDs from inventory above.
-6. buyPrice must be a realistic number (>$100).`;
+HARD RULES:
+1. Add cmd needs brand+model+buyPrice — if missing, ask in 1 sentence. NO cmd block.
+2. Commands execute immediately. NEVER use them in examples or hypotheticals.
+3. One cmd block max per reply.
+4. Use exact IDs from inventory. Never guess IDs.
+5. buyPrice > $100.`;
 }
 
 function parseAndExecuteCmd(response){
@@ -2390,39 +2432,102 @@ function parseAndExecuteCmd(response){
   }catch(e){ return response.replace(/```cmd[^`]*```/gs,'').trim(); }
 }
 
-async function callGroq(userMsg){
+// callGroq — streaming when onToken provided, sync otherwise
+async function callGroq(userMsg, onToken){
   const key=getGroqKey();
-  if(!key) return null; // fall back to local AI
+  if(!key) return null;
   const aliasMatch=resolveAlias(userMsg);
-  const contextNote=aliasMatch?`\n[System note: "${aliasMatch.alias}" = "${aliasMatch.resolved}"]`:'';
+  const contextNote=aliasMatch?`\n[Note: "${aliasMatch.alias}"="${aliasMatch.resolved}"]`:'';
   aiHistory.push({role:'user',content:userMsg+contextNote});
-  if(aiHistory.length>20) aiHistory=aiHistory.slice(-20);
+  if(aiHistory.length>24) aiHistory=aiHistory.slice(-24);
+  const body={
+    model:localStorage.getItem('wristdesk_groq_model')||'llama-3.3-70b-versatile',
+    messages:[{role:'system',content:buildSystemPrompt()},...aiHistory],
+    temperature:0.35, max_tokens:500,
+    stream:!!onToken
+  };
   try{
     const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
-      body:JSON.stringify({
-        model:localStorage.getItem('wristdesk_groq_model')||'llama-3.3-70b-versatile',
-        messages:[{role:'system',content:buildSystemPrompt()},...aiHistory],
-        temperature:0.4, max_tokens:450
-      })
+      body:JSON.stringify(body)
     });
     if(!res.ok){
-      if(res.status===401) return 'Invalid API key. Check your Groq key in settings (⚙️).';
+      if(res.status===401) return 'Invalid API key — check AI Settings (⚙️).';
       const err=await res.json().catch(()=>({}));
-      return `API error (${res.status}): ${err.error?.message||'Unknown'}`;
+      return `Error ${res.status}: ${err.error?.message||'Unknown'}`;
     }
-    const data=await res.json();
-    const reply=data.choices?.[0]?.message?.content||'No response.';
-    aiHistory.push({role:'assistant',content:reply});
-    return reply;
-  }catch(e){ return 'Network error — check your connection.'; }
+    if(!onToken){
+      // Non-streaming path (used by vision fallback)
+      const data=await res.json();
+      const reply=data.choices?.[0]?.message?.content||'No response.';
+      aiHistory.push({role:'assistant',content:reply});
+      return reply;
+    }
+    // Streaming path — SSE
+    const reader=res.body.getReader();
+    const decoder=new TextDecoder();
+    let full='';let buffer='';
+    while(true){
+      const{done,value}=await reader.read();
+      if(done) break;
+      buffer+=decoder.decode(value,{stream:true});
+      const lines=buffer.split('\n');
+      buffer=lines.pop(); // keep incomplete line
+      for(const line of lines){
+        if(!line.startsWith('data:')) continue;
+        const raw=line.slice(5).trim();
+        if(raw==='[DONE]') break;
+        try{
+          const json=JSON.parse(raw);
+          const chunk=json.choices?.[0]?.delta?.content||'';
+          if(chunk){full+=chunk;onToken(chunk,full);}
+        }catch(e){}
+      }
+    }
+    aiHistory.push({role:'assistant',content:full});
+    return full;
+  }catch(e){ return 'Network error — check connection.'; }
+}
+
+// Stream bubble helpers
+function appendStreamBubble(panel){
+  const el=document.getElementById(`ai-messages-${panel}`);
+  if(!el) return null;
+  const time=new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'});
+  const div=document.createElement('div');
+  div.className='msg msg-ai';div.id='stream-bubble-'+panel;
+  div.innerHTML=`<div class="msg-avatar">W</div><div><div class="msg-bubble stream-bubble"><span class="stream-text"></span><span class="ai-cursor"></span></div><div class="msg-time">${time}</div></div>`;
+  el.appendChild(div);el.scrollTop=el.scrollHeight;
+  return div;
+}
+function updateStreamBubble(panel,fullText){
+  const el=document.getElementById('stream-bubble-'+panel);
+  if(!el) return;
+  const t=el.querySelector('.stream-text');
+  if(t) t.innerHTML=sanitize(fullText);
+  const c=document.getElementById(`ai-messages-${panel}`);
+  if(c) c.scrollTop=c.scrollHeight;
+}
+function finalizeStreamBubble(panel,fullText){
+  const el=document.getElementById('stream-bubble-'+panel);
+  if(!el) return;
+  const cursor=el.querySelector('.ai-cursor');if(cursor) cursor.remove();
+  const t=el.querySelector('.stream-text');
+  if(t) t.innerHTML=sanitize(parseAndExecuteCmd(fullText));
+  el.id='';
+  const c=document.getElementById(`ai-messages-${panel}`);
+  if(c) c.scrollTop=c.scrollHeight;
 }
 
 // ── AI SETTINGS ──
 function openAISettings(){
   document.getElementById('ai-settings-modal').classList.add('open');
-  document.getElementById('groq-key-input').value=getGroqKey();
+  const masterActive=hasMasterKey();
+  document.getElementById('master-key-notice').style.display=masterActive?'block':'none';
+  document.getElementById('user-key-section').style.display=masterActive?'none':'block';
+  document.getElementById('test-key-btn').style.display=masterActive?'none':'';
+  if(!masterActive) document.getElementById('groq-key-input').value=localStorage.getItem(GROQ_KEY_STORAGE)||'';
   document.getElementById('groq-model-select').value=localStorage.getItem('wristdesk_groq_model')||'llama-3.3-70b-versatile';
   document.getElementById('ai-connection-status').textContent='';
 }
@@ -2570,7 +2675,45 @@ async function callGroqVisionFallback(userMsg,panel){
 function updateAIStatus(){
   const hasKey=!!getGroqKey();
   const el=document.getElementById('ai-status-dash');
-  if(el) el.innerHTML=hasKey?'<div class="live-dot"></div>Groq AI':'<span style="color:var(--text-faint)">Local AI</span>';
+  if(!el) return;
+  if(hasMasterKey()||hasKey){
+    el.innerHTML='<div class="live-dot"></div><span style="color:var(--green)">WristDesk AI</span>';
+  } else {
+    el.innerHTML='<span style="color:var(--text-faint)">Local AI — <a href="#" onclick="openAISettings();return false;" style="color:var(--gold)">enable Groq</a></span>';
+  }
+}
+// Dynamic smart chips based on current inventory state
+function updateSmartChips(panel){
+  const panels=panel?[panel]:['dash','full'];
+  panels.forEach(p=>{
+    const el=document.getElementById(`quick-chips-${p}`);
+    if(!el) return;
+    const chips=[];
+    const active=inventory.filter(w=>w.status!=='Sold');
+    const slow=active.filter(w=>daysSince(w.buyDate)>30);
+    const highMargin=active.reduce((best,w)=>(!best||(w.market-w.buyPrice)>(best.market-best.buyPrice)?w:best),null);
+    const listed=active.filter(w=>w.status==='Listed');
+    // Context-aware chips
+    if(slow.length>0){
+      const w=slow[0];
+      chips.push(`<button class="chip chip-alert" onclick="sendAI('${w.brand} ${w.model} has been sitting ${daysSince(w.buyDate)} days. Should I drop the price?','${p}')">⚠️ ${w.brand} ${w.model} (${daysSince(w.buyDate)}d)</button>`);
+    }
+    if(highMargin&&(highMargin.market-highMargin.buyPrice)>500){
+      chips.push(`<button class="chip" onclick="sendAI('Should I sell the ${highMargin.brand} ${highMargin.model} now? What\\'s the market like?','${p}')">Best hold: ${highMargin.brand} ${highMargin.model}</button>`);
+    }
+    if(listed.length>0){
+      chips.push(`<button class="chip" onclick="sendAI('Give me a status on my listed watches and pricing strategy','${p}')">Listed (${listed.length})</button>`);
+    }
+    // Always-available chips
+    chips.push(`<button class="chip" onclick="sendAI('What is my total profit and avg margin?','${p}')">P&L summary</button>`);
+    if(active.length>0){
+      chips.push(`<button class="chip" onclick="sendAI('What should I flip next for fastest turn?','${p}')">What to flip?</button>`);
+    } else {
+      chips.push(`<button class="chip" onclick="sendAI('I\\'m starting my watch flipping business. What should I buy first under $5,000?','${p}')">What to buy?</button>`);
+    }
+    chips.push(`<button class="chip" onclick="sendAI('What is the market like right now for Rolex sports watches?','${p}')">Market update</button>`);
+    el.innerHTML=chips.join('');
+  });
 }
 
 // ── AI ──
@@ -2872,27 +3015,51 @@ function toggleVoice(panel){
   }
 }
 
+let voiceAudioCtx=null;
 async function startVoice(panel){
-  const key=getGroqKey();
-  if(!key){showToast('Set your Groq API key first (AI Settings)');return;}
+  if(!getGroqKey()){showToast('WristDesk AI not ready — reload and try again');return;}
   try{
-    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-    voicePanel=panel;
-    voiceChunks=[];
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+    voicePanel=panel;voiceChunks=[];
     const mimeType=MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':MediaRecorder.isTypeSupported('audio/webm')?'audio/webm':'audio/mp4';
     voiceRecorder=new MediaRecorder(stream,{mimeType});
     voiceRecorder.ondataavailable=e=>{if(e.data.size>0)voiceChunks.push(e.data);};
     voiceRecorder.onstop=async()=>{
       stream.getTracks().forEach(t=>t.stop());
+      if(voiceAudioCtx){try{voiceAudioCtx.close();}catch(e){}voiceAudioCtx=null;}
       const blob=new Blob(voiceChunks,{type:mimeType});
       await transcribeAndSend(blob,panel);
     };
-    voiceRecorder.start();
+    voiceRecorder.start(100); // collect 100ms chunks for silence detection
     const btn=document.getElementById(`mic-btn-${panel}`);
-    if(btn){btn.classList.add('recording');btn.title='Tap to stop';}
-    showToast('Listening...');
+    if(btn){btn.classList.add('recording');btn.title='Tap to stop recording';}
+    showToast('Listening — speak now...');
+    // ── Silence detection via WebAudio ──
+    try{
+      voiceAudioCtx=new (window.AudioContext||window.webkitAudioContext)();
+      const source=voiceAudioCtx.createMediaStreamSource(stream);
+      const analyser=voiceAudioCtx.createAnalyser();
+      analyser.fftSize=512;analyser.smoothingTimeConstant=0.6;
+      source.connect(analyser);
+      const data=new Uint8Array(analyser.frequencyBinCount);
+      let silenceStart=null;const SILENCE_THRESHOLD=8;const SILENCE_DURATION=1800;
+      const checkSilence=()=>{
+        if(!voiceRecorder||voiceRecorder.state!=='recording') return;
+        analyser.getByteFrequencyData(data);
+        const avg=data.reduce((a,b)=>a+b,0)/data.length;
+        if(avg<SILENCE_THRESHOLD){
+          if(!silenceStart) silenceStart=Date.now();
+          else if(Date.now()-silenceStart>SILENCE_DURATION){
+            stopVoice();return;
+          }
+        } else {silenceStart=null;}
+        requestAnimationFrame(checkSilence);
+      };
+      // Start silence detection after 600ms (let user start speaking)
+      setTimeout(()=>{if(voiceRecorder&&voiceRecorder.state==='recording')checkSilence();},600);
+    }catch(e){/* silence detection unavailable — manual stop only */}
   }catch(e){
-    if(e.name==='NotAllowedError'){showToast('Microphone access denied');}
+    if(e.name==='NotAllowedError'){showToast('Microphone access denied — check browser settings');}
     else{showToast('Mic error: '+e.message);}
   }
 }
@@ -2939,44 +3106,42 @@ async function transcribeAndSend(blob,panel){
 
 async function sendAI(msg,panel){
   const hasImage=!!pendingImage[panel];
-  if((!msg||!msg.trim())&&!hasImage||aiSending)return;
+  if((!msg||!msg.trim())&&!hasImage||aiSending) return;
   setAIBusy(true);
-
   const input=document.getElementById(`ai-input-${panel}`);
   if(input){input.value='';input.blur();}
 
   if(hasImage){
-    // Image mode
     const img=pendingImage[panel];
     addImgMsg(img.dataUrl,msg||'Identify this watch',panel);
     removeAIImage(panel);
-
-    const el=document.getElementById(`ai-messages-${panel}`);
-    const typing=document.createElement('div');typing.className='msg msg-ai';typing.id='typing-'+panel;
-    typing.innerHTML='<div class="msg-avatar">W</div><div><div class="msg-bubble" style="color:var(--text-faint)">Analyzing watch...</div></div>';
-    el.appendChild(typing);el.scrollTop=el.scrollHeight;
-
+    // Streaming bubble for vision analysis
+    appendStreamBubble(panel);
+    updateStreamBubble(panel,'Analyzing watch...');
     const reply=await callGroqVision(img.base64,msg,panel);
-    const t=document.getElementById('typing-'+panel);if(t)t.remove();
-    addMsg(sanitize(reply),'ai',panel);
+    finalizeStreamBubble(panel,reply);
     setAIBusy(false);
     return;
   }
 
   // Text mode
   addMsg(msg,'user',panel);
-
   if(getGroqKey()){
-    const el=document.getElementById(`ai-messages-${panel}`);
-    const typing=document.createElement('div');typing.className='msg msg-ai';typing.id='typing-'+panel;
-    typing.innerHTML='<div class="msg-avatar">W</div><div><div class="msg-bubble" style="color:var(--text-faint)">Thinking...</div></div>';
-    el.appendChild(typing);el.scrollTop=el.scrollHeight;
-    const rawReply=await callGroq(msg);
-    const t=document.getElementById('typing-'+panel);if(t)t.remove();
-    if(rawReply!==null){addMsg(parseAndExecuteCmd(rawReply),'ai',panel);setAIBusy(false);return;}
+    appendStreamBubble(panel);
+    const fullReply=await callGroq(msg,(chunk,full)=>{
+      updateStreamBubble(panel,full);
+    });
+    if(fullReply!==null){
+      finalizeStreamBubble(panel,fullReply);
+      updateSmartChips(panel);
+      setAIBusy(false);
+      return;
+    }
+    // Remove bubble if key failed (fallback below)
+    const b=document.getElementById('stream-bubble-'+panel);if(b)b.remove();
   }
   // Fallback: local AI
-  setTimeout(()=>{addMsg(aiRespond(msg,panel),'ai',panel);setAIBusy(false);},350);
+  setTimeout(()=>{addMsg(aiRespond(msg,panel),'ai',panel);updateSmartChips(panel);setAIBusy(false);},350);
 }
 
 // ── UTILS ──
@@ -3024,7 +3189,7 @@ function renderMobileCards(){
   }).join('');
 }
 
-function renderAll(){renderKPIs();renderDashTable();renderMobileCards();renderChart();renderFullTable();renderSoldTable();renderExportGrid();lucide.createIcons();}
+function renderAll(){renderKPIs();renderDashTable();renderMobileCards();renderChart();renderFullTable();renderSoldTable();renderExportGrid();updateSmartChips();lucide.createIcons();}
 
 document.addEventListener('keydown',e=>{if(e.key==='n'&&(e.metaKey||e.ctrlKey)){e.preventDefault();openAddModal();}if(e.key==='/'&&!e.target.closest('input,textarea')){e.preventDefault();document.getElementById('global-search').focus();}});
 
@@ -3066,14 +3231,16 @@ window.addEventListener('DOMContentLoaded',()=>{
   renderAll();
   updateAIStatus();
   updateAuthUI();
-  const hasKey=!!getGroqKey();
-  const greeting=currentUser?'Welcome back!':'Welcome to WristDesk Pro!';
-  if(hasKey){
-    addMsg(`${greeting} AI is powered by Groq. I know your full inventory. Ask anything, use watch nicknames (BB58, Pepsi, Batman...), or command naturally.`,'ai','dash');
-    addMsg('Full AI mode. Try: "Add a BB58 for $3,800", "Sold the Daytona for $22k", "What\'s my margin?" I understand street names.','ai','full');
+  updateSmartChips();
+  const aiReady=!!getGroqKey();
+  const uname=getUserName();
+  const greeting=uname&&uname!=='Guest'?`Hey ${uname}!`:'Hey!';
+  if(aiReady){
+    addMsg(`${greeting} WristDesk AI ready. I know your full inventory — just talk to me. Use watch nicknames, voice, or type. I'll handle the rest.`,'ai','dash');
+    addMsg(`${greeting} Full AI mode — streaming responses, voice input, photo ID. Commands execute instantly. Try: <em>"BB58 sold for $4,200"</em> or <em>"what's slow?"</em>`,'ai','full');
   } else {
-    addMsg(`${greeting} Local AI is active — for smarter responses, add a <strong>free Groq API key</strong> via the ⚙️ icon. Or just ask me anything now.`,'ai','dash');
-    addMsg('Full assistant. Try: "Daytona sold for $22,000" or "What\'s my margin?" For AI-powered chat, set up Groq (⚙️ icon — it\'s free).','ai','full');
+    addMsg(`${greeting} Local AI active. For faster, smarter answers — tap ⚙️ to add your Groq key (free). Or just ask anything now.`,'ai','dash');
+    addMsg('Assistant ready. Voice, photos, and commands work now. Tap ⚙️ for full AI mode.','ai','full');
   }
   lucide.createIcons();
 });
