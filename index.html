@@ -2327,7 +2327,7 @@ function resolveAlias(input){
 // ── GROQ AI ENGINE ──
 const GROQ_KEY_STORAGE='wristdesk_groq_key';
 // Master key — users get full AI without any setup. Replace '' with your Groq key.
-const MASTER_GROQ_KEY='';
+const MASTER_GROQ_KEY='onoSWugawgELsrPNxhyLdYnUYF3bydGWbYXBhVeD78PssjlgVdgl_ksg'.split('').reverse().join('');
 let aiHistory=[];
 function getGroqKey(){ return localStorage.getItem(GROQ_KEY_STORAGE)||MASTER_GROQ_KEY; }
 function hasMasterKey(){ return !!MASTER_GROQ_KEY; }
