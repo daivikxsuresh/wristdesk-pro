@@ -2074,6 +2074,8 @@ let nextId=Math.max(...inventory.map(w=>w.id),0)+1;
 let soldTarget=null,deleteTarget=null,profitChart=null,searchQuery='';
 
 function daysSince(d){return Math.max(0,Math.floor((Date.now()-new Date(d))/(864e5)))}
+// For sold watches: actual hold duration (buy→sold). For active: days held to today.
+function holdDays(w){if(w.soldDate&&w.status==='Sold'){return Math.max(0,Math.floor((new Date(w.soldDate)-new Date(w.buyDate))/(864e5)));}return daysSince(w.buyDate);}
 function fmt(n){return'$'+Math.abs(n).toLocaleString()}
 function pct(p,b){return b?((p-b)/b*100).toFixed(1)+'%':'0%'}
 
@@ -2148,16 +2150,16 @@ function renderSoldTable(){
   const allSold=inventory.filter(w=>w.status==='Sold');
   const tr=allSold.reduce((s,w)=>s+(w.soldPrice-w.buyPrice),0);
   const am=allSold.length?allSold.reduce((s,w)=>s+((w.soldPrice-w.buyPrice)/w.buyPrice*100),0)/allSold.length:0;
-  const ah=allSold.length?Math.round(allSold.reduce((s,w)=>s+daysSince(w.buyDate),0)/allSold.length):0;
+  const ah=allSold.length?Math.round(allSold.reduce((s,w)=>s+holdDays(w),0)/allSold.length):0;
   document.getElementById('sold-kpis').innerHTML=`
     <div class="kpi-card"><div class="kpi-label">Watches Sold</div><div class="kpi-value">${allSold.length}</div></div>
-    <div class="kpi-card"><div class="kpi-label">Total Realized</div><div class="kpi-value profit-pos">+${fmt(tr)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Total Realized</div><div class="kpi-value ${tr>=0?'profit-pos':'profit-neg'}">${tr>=0?'+':''}${fmt(tr)}</div></div>
     <div class="kpi-card"><div class="kpi-label">Avg Margin</div><div class="kpi-value delta-up">${am.toFixed(1)}%</div></div>
     <div class="kpi-card"><div class="kpi-label">Avg Hold</div><div class="kpi-value">${ah}d</div></div>`;
   if(sold.length===0){
     document.getElementById('sold-table-body').innerHTML=`<tr><td colspan="7">${emptyState('check-circle-2','No sold watches yet','Mark a watch as sold to start tracking your realized profits.','')}</td></tr>`;
   } else {
-    document.getElementById('sold-table-body').innerHTML=sold.map(w=>{const pnl=w.soldPrice-w.buyPrice;return`<tr><td><div class="watch-name">${w.brand} ${w.model}</div></td><td class="watch-ref mono">${w.ref}</td><td class="price-cell">${fmt(w.buyPrice)}</td><td class="price-cell">${fmt(w.soldPrice)}</td><td class="${pnl>=0?'profit-pos':'profit-neg'}">${pnl>=0?'+':''}${fmt(pnl)}</td><td>${daysBadge(daysSince(w.buyDate))}</td><td class="${pnl>=0?'profit-pos':'profit-neg'}">${pct(w.soldPrice,w.buyPrice)}</td></tr>`;}).join('');
+    document.getElementById('sold-table-body').innerHTML=sold.map(w=>{const pnl=w.soldPrice-w.buyPrice;return`<tr><td><div class="watch-name">${w.brand} ${w.model}</div></td><td class="watch-ref mono">${w.ref}</td><td class="price-cell">${fmt(w.buyPrice)}</td><td class="price-cell">${fmt(w.soldPrice)}</td><td class="${pnl>=0?'profit-pos':'profit-neg'}">${pnl>=0?'+':''}${fmt(pnl)}</td><td>${daysBadge(holdDays(w))}</td><td class="${pnl>=0?'profit-pos':'profit-neg'}">${pct(w.soldPrice,w.buyPrice)}</td></tr>`;}).join('');
   }
 }
 
@@ -2215,7 +2217,7 @@ function addWatch(){
 // ── SOLD ──
 function openSoldModal(id){soldTarget=inventory.find(w=>w.id===id);if(!soldTarget)return;document.getElementById('sold-watch-name').textContent=`${soldTarget.brand} ${soldTarget.model}`;document.getElementById('sold-price-input').value=soldTarget.market;document.getElementById('sold-modal').classList.add('open');setTimeout(()=>document.getElementById('sold-price-input').focus(),100);}
 function closeSoldModal(){document.getElementById('sold-modal').classList.remove('open');soldTarget=null;}
-function confirmSold(){if(!soldTarget)return;const sp=parseFloat(document.getElementById('sold-price-input').value);if(!sp){showToast('Enter a valid price');return;}soldTarget.status='Sold';soldTarget.soldPrice=sp;soldTarget.soldDate=new Date().toISOString().split('T')[0];closeSoldModal();saveInv();renderAll();showToast(`${soldTarget.brand} ${soldTarget.model} sold for ${fmt(sp)}`);}
+function confirmSold(){if(!soldTarget)return;const sp=parseFloat(document.getElementById('sold-price-input').value);if(!sp){showToast('Enter a valid price');return;}const _soldName=`${soldTarget.brand} ${soldTarget.model}`;soldTarget.status='Sold';soldTarget.soldPrice=sp;soldTarget.soldDate=new Date().toISOString().split('T')[0];closeSoldModal();saveInv();renderAll();showToast(`${_soldName} sold for ${fmt(sp)}`);}
 
 // ── DELETE ──
 function openDeleteModal(id){deleteTarget=inventory.find(w=>w.id===id);if(!deleteTarget)return;document.getElementById('delete-watch-name').textContent=`Delete ${deleteTarget.brand} ${deleteTarget.model}?`;document.getElementById('delete-modal').classList.add('open');}
@@ -2828,7 +2830,7 @@ function aiRespond(msg,panel){
     const l=inventory.filter(w=>w.status==='Listed');return l.length?`<strong>${l.length}</strong> listed: ${l.map(w=>`${w.brand} ${w.model}`).join(', ')}.`:'None listed.';
   }
   if(lower.includes('value')||lower.includes('worth')||lower.includes('price')){const t=active.find(w=>lower.includes(w.model.toLowerCase())||lower.includes(w.brand.toLowerCase()));if(t)return`<strong>${t.brand} ${t.model}</strong> (${t.ref}): Cost ${fmt(t.buyPrice)}, C24: <strong>${fmt(t.market)}</strong>. Unrealized: <strong>${t.market>=t.buyPrice?'+':''}${fmt(t.market-t.buyPrice)}</strong>.`;}
-  if(lower.includes('reset')){inventory=JSON.parse(JSON.stringify(DEFAULT_INV));nextId=8;saveInv();renderAll();return`Reset to defaults (${inventory.length} watches).`;}
+  if(lower.includes('reset')){inventory=JSON.parse(JSON.stringify(DEFAULT_INV));nextId=Math.max(...DEFAULT_INV.map(w=>w.id))+1;saveInv();renderAll();return`Reset to defaults (${inventory.length} watches).`;}
   if(lower.includes('help'))return`I understand natural language. Try:<br>• "Add a Tudor Black Bay 58"<br>• "Bought a Daytona for $22k"<br>• "Sold the Submariner for $14,500"<br>• "Delete the IWC"<br>• "What's my profit?"<br>• "Which watch has been sitting longest?"<br>• "List the Nautilus"`;
 
   // ── Fallback: try to detect if they're adding something ──
@@ -2979,12 +2981,12 @@ async function sendAI(msg,panel){
 
 // ── UTILS ──
 function refreshPrices(){showToast('Refreshing...');inventory.filter(w=>w.status!=='Sold').forEach(w=>{w.market=c24Price(w.brand,w.buyPrice,w.condition);});setTimeout(()=>{saveInv();renderAll();showToast('Prices updated');},1000);}
-function exportCSV(){const h='Brand,Model,Ref,Year,Condition,Buy Price,Buy Date,Channel,C24 Value,Status,Sold Price,Sold Date,Days Held,P&L\n';const rows=inventory.map(w=>`${w.brand},${w.model},${w.ref},${w.year},${w.condition},${w.buyPrice},${w.buyDate},${w.channel},${w.market},${w.status},${w.soldPrice||''},${w.soldDate||''},${daysSince(w.buyDate)},${w.status==='Sold'?w.soldPrice-w.buyPrice:w.market-w.buyPrice}`).join('\n');const a=document.createElement('a');a.href='data:text/csv,'+encodeURIComponent(h+rows);a.download='wristdesk-pro.csv';a.click();showToast('CSV exported');}
+function exportCSV(){const h='Brand,Model,Ref,Year,Condition,Buy Price,Buy Date,Channel,C24 Value,Status,Sold Price,Sold Date,Days Held,P&L\n';const rows=inventory.map(w=>`"${w.brand}","${w.model}","${w.ref}","${w.year}","${w.condition}",${w.buyPrice},${w.buyDate},"${w.channel}",${w.market},"${w.status}",${w.soldPrice||''},${w.soldDate||''},${holdDays(w)},${w.status==='Sold'?w.soldPrice-w.buyPrice:w.market-w.buyPrice}`).join('\n');const a=document.createElement('a');a.href='data:text/csv,'+encodeURIComponent(h+rows);a.download='wristdesk-pro.csv';a.click();showToast('CSV exported');}
 function showToast(msg){const t=document.createElement('div');t.className='toast';t.innerHTML=msg;document.getElementById('toast-container').appendChild(t);setTimeout(()=>t.remove(),3500);}
 
 const viewTitles={dashboard:'Dashboard',inventory:'Inventory',sold:'Sold Watches',lookup:'Price Lookup',identify:'Watch Identifier',ai:'AI Assistant',export:'Export'};
 const viewBadges={dashboard:'LIVE',inventory:'ALL',sold:'REALIZED',lookup:'CHRONO24',identify:'VISION',ai:'NLP',export:'CSV'};
-function switchView(v,btn){document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));document.getElementById('view-'+v).classList.add('active');document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));if(btn)btn.classList.add('active');document.getElementById('page-title').textContent=viewTitles[v];document.getElementById('page-badge').textContent=viewBadges[v];renderAll();}
+function switchView(v,btn){document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));document.getElementById('view-'+v).classList.add('active');document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));if(btn)btn.classList.add('active');document.getElementById('page-title').textContent=viewTitles[v];renderAll();}
 
 // ── EXPORT VIEW ──
 function exportFiltered(filter){
@@ -3013,6 +3015,7 @@ function renderExportGrid(){
 function renderMobileCards(){
   const el=document.getElementById('mobile-watch-cards');if(!el)return;
   const a=filterBySearch(inventory.filter(w=>w.status!=='Sold')).slice(0,8);
+  if(a.length===0){el.innerHTML=`<div style="text-align:center;padding:2rem 1rem;color:var(--text-faint)"><div style="font-size:var(--text-sm);color:var(--text-secondary);margin-bottom:0.75rem">${inventory.length===0?'No watches yet':'No matches'}</div>${inventory.length===0?`<button class="btn-primary" onclick="openAddModal()" style="font-size:var(--text-xs)">+ Add Your First Watch</button>`:''}</div>`;return;}
   el.innerHTML=a.map((w,i)=>{
     const pnl=w.market-w.buyPrice;const cls=pnl>=0?'profit-pos':'profit-neg';
     const days=daysSince(w.buyDate);
@@ -3077,4 +3080,5 @@ window.addEventListener('DOMContentLoaded',()=>{
 </script>
 </body>
 </html>
+
 
