@@ -1549,24 +1549,25 @@ body::before{
   <div class="modal" style="width:400px">
     <div class="modal-title" id="auth-modal-title">Welcome to WristDesk Pro</div>
     <div style="font-size:var(--text-xs);color:var(--text-secondary);margin-bottom:1rem" id="auth-modal-sub">Sign in to sync your inventory across devices.</div>
+    <!-- Theme picker — always visible -->
+    <div class="form-group" style="margin-bottom:0.8rem">
+      <label class="form-label">Theme</label>
+      <div style="display:flex;gap:0.5rem">
+        <button type="button" id="pick-dark" onclick="pickTheme('dark')" style="flex:1;padding:0.6rem;border-radius:8px;border:2px solid var(--navy-lighter);background:var(--navy-mid);text-align:center;cursor:pointer">
+          <div style="font-size:16px;margin-bottom:2px">&#127761;</div>
+          <div style="font-size:var(--text-xs);color:var(--text-primary)">Dark</div>
+        </button>
+        <button type="button" id="pick-light" onclick="pickTheme('light')" style="flex:1;padding:0.6rem;border-radius:8px;border:2px solid var(--navy-lighter);background:var(--navy-mid);text-align:center;cursor:pointer">
+          <div style="font-size:16px;margin-bottom:2px">&#9728;&#65039;</div>
+          <div style="font-size:var(--text-xs);color:var(--text-primary)">Light</div>
+        </button>
+      </div>
+    </div>
     <!-- Sign-up extra fields -->
     <div id="signup-fields" style="display:none">
       <div class="form-group" style="margin-bottom:0.8rem">
         <label class="form-label">Your Name</label>
         <input class="form-input" id="auth-name" type="text" placeholder="e.g. Daivik">
-      </div>
-      <div class="form-group" style="margin-bottom:0.8rem">
-        <label class="form-label">Theme Preference</label>
-        <div style="display:flex;gap:0.5rem">
-          <button type="button" class="theme-pick active" id="pick-dark" onclick="pickTheme('dark')" style="flex:1;padding:0.6rem;border-radius:8px;border:2px solid var(--gold);background:var(--navy-mid);text-align:center;cursor:pointer">
-            <div style="font-size:16px;margin-bottom:2px">&#127761;</div>
-            <div style="font-size:var(--text-xs);color:var(--text-primary)">Dark</div>
-          </button>
-          <button type="button" class="theme-pick" id="pick-light" onclick="pickTheme('light')" style="flex:1;padding:0.6rem;border-radius:8px;border:2px solid var(--navy-lighter);background:var(--navy-mid);text-align:center;cursor:pointer">
-            <div style="font-size:16px;margin-bottom:2px">&#9728;&#65039;</div>
-            <div style="font-size:var(--text-xs);color:var(--text-primary)">Light</div>
-          </button>
-        </div>
       </div>
     </div>
     <div class="form-group" style="margin-bottom:0.8rem">
@@ -1955,11 +1956,12 @@ function openAccountMenu(){
   if(c==='logout'||c==='sign out'||c==='signout') signOut();
   else if(c==='profile'||c==='edit') openProfileModal();
 }
-let signupThemePick='dark';
+let signupThemePick='light';
 function pickTheme(t){
   signupThemePick=t;
   document.getElementById('pick-dark').style.borderColor=t==='dark'?'var(--gold)':'var(--navy-lighter)';
   document.getElementById('pick-light').style.borderColor=t==='light'?'var(--gold)':'var(--navy-lighter)';
+  applyTheme(t); // live preview
 }
 function toggleAuthMode(){
   const fields=document.getElementById('signup-fields');
@@ -1982,6 +1984,11 @@ function openAuthModal(){
   document.getElementById('auth-modal-sub').textContent='Sign in to sync your inventory across devices.';
   document.getElementById('auth-forgot-btn').style.display='block';
   document.getElementById('auth-error').textContent='';
+  // Pre-select current theme in picker
+  const t=getTheme();
+  signupThemePick=t;
+  document.getElementById('pick-dark').style.borderColor=t==='dark'?'var(--gold)':'var(--navy-lighter)';
+  document.getElementById('pick-light').style.borderColor=t==='light'?'var(--gold)':'var(--navy-lighter)';
 }
 function closeAuthModal(){document.getElementById('auth-modal').classList.remove('open');document.getElementById('auth-error').textContent='';}
 
@@ -2039,8 +2046,8 @@ if(supa){
         }
       }
     } else if(wasLoggedIn){
-      // Logged out — revert to guest sample data and dark theme
-      applyTheme('dark');
+      // Logged out — revert to guest sample data and light theme
+      applyTheme('light');
       inventory=loadInvLocal();
       nextId=Math.max(...inventory.map(w=>w.id),0)+1;
       renderAll();
@@ -2909,7 +2916,7 @@ function applyTheme(theme){
 }
 function getTheme(){
   if(currentUser?.user_metadata?.theme) return currentUser.user_metadata.theme;
-  return localStorage.getItem('wristdesk_theme')||'dark';
+  return localStorage.getItem('wristdesk_theme')||'light';
 }
 async function toggleThemeUI(){
   const newTheme=getTheme()==='dark'?'light':'dark';
