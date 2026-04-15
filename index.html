@@ -2139,11 +2139,14 @@ async function syncToCloud(){
         buy_date:w.buyDate||null, channel:w.channel||'', market_price:w.market||0,
         status:w.status||'In Stock', sold_price:w.soldPrice||null, sold_date:w.soldDate||null
       }));
-      const{data:upserted,error}=await supa.from('watches').upsert(rows,{onConflict:'id'}).select('id');
+      const{data:upserted,error}=await supa.from('watches').upsert(rows,{onConflict:'id'}).select('id,brand,model,buy_price,buy_date');
       if(error) throw error;
-      // Write back Supabase-assigned IDs so future upserts can match correctly
+      // Write back Supabase-assigned IDs — match by supaId first, then by fields for new rows
       if(upserted){
-        upserted.forEach((row,i)=>{if(inventory[i]){inventory[i].supaId=row.id;}});
+        upserted.forEach(row=>{
+          const match=inventory.find(w=>w.supaId===row.id)||inventory.find(w=>!w.supaId&&w.brand===row.brand&&w.model===row.model&&w.buyPrice===row.buy_price&&w.buyDate===row.buy_date);
+          if(match) match.supaId=row.id;
+        });
         try{localStorage.setItem(STORAGE_KEY,JSON.stringify(inventory));}catch(e){}
       }
     }
@@ -2209,7 +2212,7 @@ function renderKPIs(){
     {label:'In Stock',value:k.active,delta:'',cls:''},
     {label:'Portfolio Value',value:fmt(k.totalMarket),delta:(k.unrealized>=0?'+ ':'- ')+fmt(k.unrealized)+' unrealized',cls:k.unrealized>=0?'delta-up':'delta-down'},
     {label:'Unrealized P&L',value:(k.unrealized>=0?'+':'-')+fmt(k.unrealized),delta:k.totalCost?pct(k.totalMarket,k.totalCost)+' gain':'N/A',cls:k.unrealized>=0?'delta-up':'delta-down'},
-    {label:'Realized Profit',value:'+'+fmt(k.realized),delta:k.sold+' sold',cls:'delta-up'},
+    {label:'Realized Profit',value:(k.realized>=0?'+':'-')+fmt(k.realized),delta:k.sold+' sold',cls:k.realized>=0?'delta-up':'delta-down'},
     {label:'Avg Hold',value:k.avgDays+'d',delta:k.avgDays>30?'Review slow movers':'Good turnover',cls:k.avgDays>30?'delta-down':'delta-up'}
   ];
   document.getElementById('kpi-grid').innerHTML=items.map(i=>`<div class="kpi-card"><div class="kpi-label">${i.label}</div><div class="kpi-value">${i.value}</div>${i.delta?`<div class="kpi-delta ${i.cls}">${i.delta}</div>`:''}</div>`).join('');
@@ -2221,7 +2224,7 @@ function daysBadge(d){return`<span class="days-badge ${d>60?'days-hot':d>30?'day
 function watchRow(w,full=false){
   const pnl=w.status==='Sold'?(w.soldPrice-w.buyPrice):(w.market-w.buyPrice);
   const cls=pnl>=0?'profit-pos':'profit-neg';
-  const days=daysSince(w.buyDate);
+  const days=holdDays(w);
   const actions=w.status!=='Sold'?`<div class="action-btns"><button class="action-btn sell-btn" title="Sell" onclick="openSoldModal(${w.id})"><i data-lucide="check-circle" style="width:14px;height:14px;"></i></button><button class="action-btn" title="List" onclick="toggleListed(${w.id})"><i data-lucide="tag" style="width:14px;height:14px;"></i></button><button class="action-btn delete-btn" title="Delete" onclick="openDeleteModal(${w.id})"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></button></div>`:`<div class="action-btns"><button class="action-btn delete-btn" title="Delete" onclick="openDeleteModal(${w.id})"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></button></div>`;
   return`<tr><td><div class="watch-name">${w.brand} ${w.model}</div>${full?`<div class="watch-ref">${w.ref}</div>`:''}</td>${full?`<td class="watch-ref mono">${w.ref}</td><td style="color:var(--text-secondary)">${w.condition}</td>`:''}<td class="price-cell">${fmt(w.buyPrice)}</td><td class="market-cell">${w.status==='Sold'?fmt(w.soldPrice||0):fmt(w.market)}</td><td class="${cls}">${pnl>=0?'+':''}${fmt(pnl)} <span style="color:var(--text-faint);font-size:10px">(${pct(w.status==='Sold'?(w.soldPrice||0):w.market,w.buyPrice)})</span></td><td>${daysBadge(days)}</td><td>${statusBadge(w.status)}</td><td>${actions}</td></tr>`;
 }
@@ -2519,7 +2522,7 @@ function buildSystemPrompt(){
     const alert=d>45?'⚠️ SLOW ':d>30?'🕐 ':''
     return `- [id:${w.id}] ${alert}${w.brand} ${w.model} (${w.ref}): bought ${fmt(w.buyPrice)}, C24 ${fmt(w.market)}, P&L ${pnl>=0?'+':''}${fmt(pnl)}, ${d}d held, status: ${w.status}`;
   }).join('\n');
-  const soldSummary=sold.slice(-8).map(w=>`- ${w.brand} ${w.model}: bought ${fmt(w.buyPrice)} → sold ${fmt(w.soldPrice)} (+${fmt(w.soldPrice-w.buyPrice)})`).join('\n');
+  const soldSummary=sold.slice(-8).map(w=>{const p=w.soldPrice-w.buyPrice;return`- ${w.brand} ${w.model}: bought ${fmt(w.buyPrice)} → sold ${fmt(w.soldPrice)} (${p>=0?'+':'-'}${fmt(p)})`;}).join('\n');
   const slowAlert=slowMovers.length?`\nALERT: ${slowMovers.length} watch${slowMovers.length>1?'es':''} over 30 days: ${slowMovers.map(w=>`${w.brand} ${w.model} (${daysSince(w.buyDate)}d)`).join(', ')}. Flag for discounting.`:'';
   const bestAlert=bestMargin?`\nBEST HOLD: ${bestMargin.brand} ${bestMargin.model} at +${fmt(bestMargin.market-bestMargin.buyPrice)} unrealized.`:'';
   return `You are WristDesk AI — a razor-sharp watch dealer assistant built for speed. You run a fast-paced grey market operation.
@@ -3136,8 +3139,8 @@ function aiRespond(msg,panel){
   }
 
   // ── QUERIES ──
-  if(lower.includes('stock')||lower.includes('inventory')||lower.includes('how many'))return`<strong>${k.active} watches</strong> in stock. Value: <strong>${fmt(k.totalMarket)}</strong>. Cost: ${fmt(k.totalCost)}. Unrealized: <strong>+${fmt(k.unrealized)}</strong>.`;
-  if(lower.includes('profit')||lower.includes('earn')||lower.includes('made'))return`Realized: <strong>+${fmt(k.realized)}</strong> (${k.sold} sold). Unrealized: <strong>+${fmt(k.unrealized)}</strong>. Combined: <strong>+${fmt(k.realized+k.unrealized)}</strong>.`;
+  if(lower.includes('stock')||lower.includes('inventory')||lower.includes('how many'))return`<strong>${k.active} watches</strong> in stock. Value: <strong>${fmt(k.totalMarket)}</strong>. Cost: ${fmt(k.totalCost)}. Unrealized: <strong>${k.unrealized>=0?'+':'-'}${fmt(k.unrealized)}</strong>.`;
+  if(lower.includes('profit')||lower.includes('earn')||lower.includes('made')){const combined=k.realized+k.unrealized;return`Realized: <strong>${k.realized>=0?'+':'-'}${fmt(k.realized)}</strong> (${k.sold} sold). Unrealized: <strong>${k.unrealized>=0?'+':'-'}${fmt(k.unrealized)}</strong>. Combined: <strong>${combined>=0?'+':'-'}${fmt(combined)}</strong>.`;}
   if(lower.includes('slow')||lower.includes('longest')||lower.includes('old')||lower.includes('sitting')||lower.includes('over 30')){const sorted=[...active].sort((a,b)=>daysSince(b.buyDate)-daysSince(a.buyDate));const slow=sorted.filter(w=>daysSince(w.buyDate)>30);if(slow.length)return`<strong>${slow.length}</strong> held over 30 days: ${slow.map(w=>`<strong>${w.brand} ${w.model}</strong> (${daysSince(w.buyDate)}d)`).join(', ')}.`;if(sorted.length)return`Slowest: <strong>${sorted[0].brand} ${sorted[0].model}</strong> (${daysSince(sorted[0].buyDate)}d). All under 30 days.`;return`No active watches.`;}
   if(lower.includes('best')||lower.includes('margin')||lower.includes('highest')){if(lower.includes('avg')||lower.includes('average')){const am=active.length?active.reduce((s,w)=>s+((w.market-w.buyPrice)/w.buyPrice*100),0)/active.length:0;return`Average margin: <strong>${am.toFixed(1)}%</strong> across ${active.length} watches.`;}const best=[...active].sort((a,b)=>(b.market-b.buyPrice)/b.buyPrice-(a.market-a.buyPrice)/a.buyPrice)[0];if(best)return`Best margin: <strong>${best.brand} ${best.model}</strong> at <strong>${pct(best.market,best.buyPrice)}</strong> (+${fmt(best.market-best.buyPrice)}).`;return`No active watches.`;}
   if(lower.includes('list')){
@@ -3335,7 +3338,7 @@ function exportFiltered(filter){
   if(filter==='stock'){data=inventory.filter(w=>w.status==='In Stock');filename='wristdesk-in-stock.csv';}
   else if(filter==='sold'){data=inventory.filter(w=>w.status==='Sold');filename='wristdesk-sold.csv';}
   else if(filter==='listed'){data=inventory.filter(w=>w.status==='Listed');filename='wristdesk-listed.csv';}
-  const rows=data.map(w=>`${w.brand},${w.model},${w.ref},${w.year},${w.condition},${w.buyPrice},${w.buyDate},${w.channel},${w.market},${w.status},${w.soldPrice||''},${w.soldDate||''},${daysSince(w.buyDate)},${w.status==='Sold'?w.soldPrice-w.buyPrice:w.market-w.buyPrice}`).join('\n');
+  const rows=data.map(w=>`${w.brand},${w.model},${w.ref},${w.year},${w.condition},${w.buyPrice},${w.buyDate},${w.channel},${w.market},${w.status},${w.soldPrice||''},${w.soldDate||''},${holdDays(w)},${w.status==='Sold'?w.soldPrice-w.buyPrice:w.market-w.buyPrice}`).join('\n');
   const a=document.createElement('a');a.href='data:text/csv,'+encodeURIComponent(h+rows);a.download=filename;a.click();
   showToast(`${data.length} records exported`);
 }
