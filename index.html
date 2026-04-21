@@ -353,6 +353,14 @@ body::before{
   content:'';position:absolute;top:0;left:0;right:0;height:1px;
   background:linear-gradient(90deg,transparent,rgba(201,169,110,0.2),transparent);
 }
+/* Gold shimmer sweep on positive/featured KPI cards */
+.kpi-card.kpi-shine::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(105deg,transparent 35%,rgba(201,169,110,0.05) 50%,transparent 65%);
+  animation:kpiShimmer 4s ease-in-out infinite;
+  border-radius:inherit;
+}
+@keyframes kpiShimmer{0%{transform:translateX(-120%)}55%,100%{transform:translateX(120%)}}
 .kpi-card:hover{border-color:rgba(201,169,110,0.15);transform:translateY(-2px)}
 .kpi-label{
   font-size:var(--text-xs);color:var(--text-faint);
@@ -1124,7 +1132,7 @@ body::before{
 }
 
 /* ── TYPING INDICATOR ── */
-.typing-bubble{display:flex;align-items:center;gap:4px;padding:0.55rem 0.8rem!important;min-width:48px}
+.typing-bubble{display:flex;align-items:center;gap:4px;padding:0.55rem 0.8rem!important;min-width:48px;width:fit-content;max-width:80px}
 .typing-dot{
   display:inline-block;width:7px;height:7px;border-radius:50%;
   background:var(--gold);opacity:0.4;flex-shrink:0;
@@ -1138,8 +1146,9 @@ body::before{
 .speak-btn{
   background:none;border:none;cursor:pointer;
   color:var(--text-faint);font-size:0.68rem;
-  padding:2px 4px;border-radius:4px;
-  margin-top:3px;display:inline-flex;align-items:center;gap:3px;
+  padding:4px 6px;border-radius:4px;
+  margin-top:3px;display:flex;align-items:center;gap:3px;
+  min-height:36px;
   transition:color var(--transition);
   -webkit-tap-highlight-color:transparent;
   font-family:var(--font-body);
@@ -1153,9 +1162,9 @@ body::before{
 .ai-bubble .ai-list li,.msg-bubble .ai-list li{margin-bottom:0.15rem}
 
 /* ── ACTIVE STATE FLASH (iOS tap feedback) ── */
-.btn-primary:active{transform:scale(0.96);transition:transform 0.08s!important}
-.btn-ghost:active{transform:scale(0.96);transition:transform 0.08s!important}
-.btn-danger:active{transform:scale(0.96);transition:transform 0.08s!important}
+.btn-primary:active{transform:scale(0.96);transition:transform 0.08s}
+.btn-ghost:active{transform:scale(0.96);transition:transform 0.08s}
+.btn-danger:active{transform:scale(0.96);transition:transform 0.08s}
 .export-dl-btn:active{transform:scale(0.96);opacity:0.85}
 .action-btn:active{transform:scale(0.9)!important;opacity:0.8}
 .chip:active{transform:scale(0.95);opacity:0.8}
@@ -1519,7 +1528,7 @@ body::before{
 </div>
 
 <!-- SOLD MODAL -->
-<div class="sold-overlay" id="sold-modal">
+<div class="sold-overlay" id="sold-modal" onclick="if(event.target===this)closeSoldModal()">
   <div class="sold-card">
     <div class="sold-icon"><i data-lucide="check" style="width:28px;height:28px;color:var(--green)"></i></div>
     <div class="sold-title" id="sold-watch-name">Mark as Sold</div>
@@ -1533,7 +1542,7 @@ body::before{
 </div>
 
 <!-- DELETE MODAL -->
-<div class="delete-overlay" id="delete-modal">
+<div class="delete-overlay" id="delete-modal" onclick="if(event.target===this)closeDeleteModal()">
   <div class="delete-card">
     <div class="delete-icon"><i data-lucide="trash-2" style="width:28px;height:28px;color:var(--red)"></i></div>
     <div class="delete-title" id="delete-watch-name">Delete Watch</div>
@@ -2246,13 +2255,47 @@ function calcKPIs(){
 function renderKPIs(){
   const k=calcKPIs();
   const items=[
-    {label:'In Stock',value:k.active,delta:'',cls:''},
-    {label:'Portfolio Value',value:fmt(k.totalMarket),delta:(k.unrealized>=0?'+ ':'- ')+fmt(k.unrealized)+' unrealized',cls:k.unrealized>=0?'delta-up':'delta-down'},
-    {label:'Unrealized P&L',value:(k.unrealized>=0?'+':'-')+fmt(k.unrealized),delta:k.totalCost?pct(k.totalMarket,k.totalCost)+' gain':'N/A',cls:k.unrealized>=0?'delta-up':'delta-down'},
-    {label:'Realized Profit',value:(k.realized>=0?'+':'-')+fmt(k.realized),delta:k.sold+' sold',cls:k.realized>=0?'delta-up':'delta-down'},
-    {label:'Avg Hold',value:k.avgDays+'d',delta:k.avgDays>30?'Review slow movers':'Good turnover',cls:k.avgDays>30?'delta-down':'delta-up'}
+    {label:'In Stock',value:k.active,raw:k.active,ftype:'int',sign:'',shine:false,delta:'',cls:''},
+    {label:'Portfolio Value',value:fmt(k.totalMarket),raw:k.totalMarket,ftype:'money',sign:'',shine:true,delta:(k.unrealized>=0?'+ ':'- ')+fmt(k.unrealized)+' unrealized',cls:k.unrealized>=0?'delta-up':'delta-down'},
+    {label:'Unrealized P&L',value:(k.unrealized>=0?'+':'')+fmt(k.unrealized),raw:k.unrealized,ftype:'money_signed',sign:k.unrealized>=0?'+':'-',shine:k.unrealized>0,delta:k.totalCost?pct(k.totalMarket,k.totalCost)+' gain':'N/A',cls:k.unrealized>=0?'delta-up':'delta-down'},
+    {label:'Realized Profit',value:(k.realized>=0?'+':'')+fmt(k.realized),raw:k.realized,ftype:'money_signed',sign:k.realized>=0?'+':'-',shine:k.realized>0,delta:k.sold+' sold',cls:k.realized>=0?'delta-up':'delta-down'},
+    {label:'Avg Hold',value:k.avgDays+'d',raw:k.avgDays,ftype:'days',sign:'',shine:false,delta:k.avgDays>30?'Review slow movers':'Good turnover',cls:k.avgDays>30?'delta-down':'delta-up'}
   ];
-  document.getElementById('kpi-grid').innerHTML=items.map(i=>`<div class="kpi-card"><div class="kpi-label">${i.label}</div><div class="kpi-value">${i.value}</div>${i.delta?`<div class="kpi-delta ${i.cls}">${i.delta}</div>`:''}</div>`).join('');
+  document.getElementById('kpi-grid').innerHTML=items.map(i=>`<div class="kpi-card${i.shine?' kpi-shine':''}"><div class="kpi-label">${i.label}</div><div class="kpi-value" data-raw="${i.raw}" data-ftype="${i.ftype}" data-sign="${i.sign}">${i.value}</div>${i.delta?`<div class="kpi-delta ${i.cls}">${i.delta}</div>`:''}</div>`).join('');
+}
+// Count-up animation — ticks KPI numbers from 0 to final value on dashboard entry
+let _kpiAnimating=false;
+function countUpKPIs(){
+  if(_kpiAnimating)return;
+  _kpiAnimating=true;
+  document.querySelectorAll('#kpi-grid .kpi-value[data-raw]').forEach((el,i)=>{
+    const raw=parseFloat(el.dataset.raw);
+    const ftype=el.dataset.ftype;
+    const sign=el.dataset.sign||'';
+    if(isNaN(raw))return;
+    const duration=900;const ease=t=>1-Math.pow(1-t,3);
+    setTimeout(()=>{
+      if(raw===0){return;}
+      const start=performance.now();
+      const absVal=Math.abs(raw);
+      function tick(now){
+        const t=Math.min((now-start)/duration,1);
+        const cur=absVal*ease(t);
+        if(ftype==='int')el.textContent=Math.round(cur);
+        else if(ftype==='days')el.textContent=Math.round(cur)+'d';
+        else el.textContent=(raw<0?'-':sign)+fmt(cur);
+        if(t<1)requestAnimationFrame(tick);
+        else{
+          // snap to exact final value
+          if(ftype==='int')el.textContent=Math.round(raw);
+          else if(ftype==='days')el.textContent=Math.round(raw)+'d';
+          else el.textContent=(raw<0?'-':sign)+fmt(absVal);
+        }
+      }
+      requestAnimationFrame(tick);
+    },i*80);
+  });
+  setTimeout(()=>{_kpiAnimating=false;},1800);
 }
 
 // ── TABLES ──
@@ -2524,6 +2567,11 @@ Condition: [Unworn / Like New / Good / Fair — based on what you can see]
 If image quality limits identification, give your best assessment and note it briefly.`;
   try{
     const reply=await callGroqVision(pendingIdentifyBase64,prompt,null);
+    const isError=!reply||/^(Network error|Invalid API key|Set your Groq|API error)/i.test(reply);
+    if(isError){
+      el.innerHTML=`<div style="color:var(--red);font-size:var(--text-sm);padding:0.75rem 0">${reply||'Analysis failed'} — check connection or API key.</div>`;
+      return;
+    }
     renderIdentifyResult(reply);
   }catch(e){
     el.innerHTML=`<div style="color:var(--red);font-size:var(--text-sm);padding:0.75rem 0">Analysis failed — try a clearer photo.</div>`;
@@ -2737,7 +2785,8 @@ async function callGroq(userMsg, onToken){
   const contextNote=aliasMatch?`\n[Note: "${aliasMatch.alias}"="${aliasMatch.resolved}"]`:'';
   aiHistory.push({role:'user',content:userMsg+contextNote});
   if(aiHistory.length>24) aiHistory=aiHistory.slice(-24);
-  const isSimpleCommand=/\b(add|sell|sold|delete|remove|list|unlist|update|p&l|summary|profit|stock|how many|count)\b/i.test(userMsg);
+  const hasAnalyticalContext=/\b(selling|listed|listing|analysis|market|historically|recently|trend|should|strategy|recommend|why|explain|forecast|compare)\b/i.test(userMsg);
+  const isSimpleCommand=!hasAnalyticalContext&&/\b(add|delete|remove|unlist|how many|count)\b/i.test(userMsg);
   const chosenModel=isSimpleCommand?'llama-3.1-8b-instant':(localStorage.getItem('wristdesk_groq_model')||'llama-3.3-70b-versatile');
   const body={
     model:chosenModel,
@@ -2871,30 +2920,19 @@ async function speakResponse(text,btn){
     const blob=await res.blob();
     const url=URL.createObjectURL(blob);
     currentAudio=new Audio(url);
-    currentAudio.play();
-    currentAudio.onended=()=>{
+    const cleanup=()=>{
       if(btn){btn.classList.remove('speaking');btn.innerHTML='🔊 speak';}
       URL.revokeObjectURL(url);currentAudio=null;
     };
+    currentAudio.onended=cleanup;
+    currentAudio.onerror=cleanup;
+    currentAudio.play().catch(cleanup);
   }catch(e){if(btn){btn.classList.remove('speaking');btn.innerHTML='🔊 speak';}}
 }
 
 // ── SCROLL LOCK (iOS modal background scroll fix) ──
-let _scrollY=0;
-function lockScroll(){
-  _scrollY=window.scrollY;
-  document.body.style.overflow='hidden';
-  document.body.style.position='fixed';
-  document.body.style.top=`-${_scrollY}px`;
-  document.body.style.width='100%';
-}
-function unlockScroll(){
-  document.body.style.overflow='';
-  document.body.style.position='';
-  document.body.style.top='';
-  document.body.style.width='';
-  window.scrollTo(0,_scrollY);
-}
+function lockScroll(){document.documentElement.style.overflow='hidden';}
+function unlockScroll(){document.documentElement.style.overflow='';}
 
 // ── AI SETTINGS ──
 function openAISettings(){
@@ -3557,7 +3595,7 @@ function showToast(msg){const t=document.createElement('div');t.className='toast
 
 const viewTitles={dashboard:'Dashboard',inventory:'Inventory',sold:'Sold Watches',dealcheck:'Deal Checker',lookup:'Price Lookup',identify:'Listing Generator',ai:'AI Assistant',export:'Export'};
 const viewBadges={dashboard:'LIVE',inventory:'ALL',sold:'REALIZED',dealcheck:'BUY / PASS',lookup:'CHRONO24',identify:'AI VISION',ai:'NLP',export:'CSV'};
-function switchView(v,btn){document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));document.getElementById('view-'+v).classList.add('active');document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));if(btn)btn.classList.add('active');document.getElementById('page-title').textContent=viewTitles[v]||v;const badge=document.getElementById('page-badge');if(badge&&!currentUser){badge.textContent='GUEST';}else if(badge&&viewBadges[v]){badge.textContent=viewBadges[v];}renderAll();}
+function switchView(v,btn){document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));document.getElementById('view-'+v).classList.add('active');document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));if(btn)btn.classList.add('active');document.getElementById('page-title').textContent=viewTitles[v]||v;const badge=document.getElementById('page-badge');if(badge&&!currentUser){badge.textContent='GUEST';}else if(badge&&viewBadges[v]){badge.textContent=viewBadges[v];}renderAll();if(v==='dashboard')setTimeout(countUpKPIs,80);}
 
 // ── EXPORT VIEW ──
 function exportFiltered(filter){
@@ -3635,6 +3673,7 @@ function toggleMobileSidebar(){
 window.addEventListener('DOMContentLoaded',()=>{
   applyTheme(getTheme());
   renderAll();
+  setTimeout(countUpKPIs,300);
   updateAIStatus();
   updateAuthUI();
   updateGuestBanner();
