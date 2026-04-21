@@ -854,6 +854,28 @@ body::before{
 }
 .m-watch-card-actions{display:flex;gap:0.25rem}
 
+/* Swipe-to-reveal card actions */
+.m-swipe-outer{position:relative;overflow:hidden;border-radius:12px}
+.m-swipe-actions{
+  position:absolute;right:0;top:0;bottom:0;
+  display:flex;align-items:stretch;
+}
+.m-swipe-action-btn{
+  width:72px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:4px;border:none;cursor:pointer;
+  font-size:0.58rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:0.05em;
+  -webkit-tap-highlight-color:transparent;
+  transition:filter 0.1s;
+}
+.m-swipe-action-btn.swipe-sell{background:#1d4d32;color:var(--green)}
+.m-swipe-action-btn.swipe-list{background:#3d3010;color:var(--amber)}
+.m-swipe-action-btn.swipe-delete{background:#4d1f1f;color:var(--red)}
+.m-swipe-action-btn:active{filter:brightness(1.3)}
+.m-swipe-action-btn i{width:18px;height:18px}
+.m-watch-card{will-change:transform;margin-bottom:0;touch-action:pan-y}
+
 /* ═══════════════════════════════════════════════════
    MOBILE — Bottom tab bar, responsive grids
    ═══════════════════════════════════════════════════ */
@@ -3628,12 +3650,72 @@ function renderMobileCards(){
   el.innerHTML=a.map((w,i)=>{
     const pnl=w.market-w.buyPrice;const cls=pnl>=0?'profit-pos':'profit-neg';
     const days=daysSince(w.buyDate);
-    const actions=`<div class="m-watch-card-actions"><button class="action-btn sell-btn" title="Sell" onclick="openSoldModal(${w.id})"><i data-lucide="check-circle" style="width:14px;height:14px;"></i></button><button class="action-btn" title="List" onclick="toggleListed(${w.id})"><i data-lucide="tag" style="width:14px;height:14px;"></i></button><button class="action-btn delete-btn" title="Delete" onclick="openDeleteModal(${w.id})"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></button></div>`;
-    return`<div class="m-watch-card" style="animation-delay:${i*0.05}s"><div class="m-watch-card-top"><div class="m-watch-card-name">${w.brand} ${w.model}</div>${statusBadge(w.status)}</div><div class="m-watch-card-row"><div class="m-watch-card-stat"><span class="m-watch-card-stat-label">Bought</span><span class="m-watch-card-stat-val">${fmt(w.buyPrice)}</span></div><div class="m-watch-card-stat"><span class="m-watch-card-stat-label">C24 Value</span><span class="m-watch-card-stat-val gold">${fmt(w.market)}</span></div><div class="m-watch-card-stat"><span class="m-watch-card-stat-label">P&L</span><span class="m-watch-card-stat-val ${cls}">${pnl>=0?'+':''}${fmt(pnl)}</span></div><div class="m-watch-card-stat"><span class="m-watch-card-stat-label">Held</span><span class="m-watch-card-stat-val">${daysBadge(days)}</span></div></div><div class="m-watch-card-bottom">${actions}</div></div>`;
+    const listLabel=w.status==='Listed'?'Unlist':'List';
+    const listIcon=w.status==='Listed'?'tag-off':'tag';
+    const swipeActions=`<div class="m-swipe-actions"><button class="m-swipe-action-btn swipe-sell" onclick="openSoldModal(${w.id});snapBackById(${w.id})"><i data-lucide="check-circle"></i>Sell</button><button class="m-swipe-action-btn swipe-list" onclick="toggleListed(${w.id});snapBackById(${w.id})"><i data-lucide="${listIcon}"></i>${listLabel}</button><button class="m-swipe-action-btn swipe-delete" onclick="openDeleteModal(${w.id});snapBackById(${w.id})"><i data-lucide="trash-2"></i>Del</button></div>`;
+    return`<div class="m-swipe-outer">${swipeActions}<div class="m-watch-card" id="sw-${w.id}" style="animation-delay:${i*0.05}s"><div class="m-watch-card-top"><div class="m-watch-card-name">${w.brand} ${w.model}</div>${statusBadge(w.status)}</div><div class="m-watch-card-row"><div class="m-watch-card-stat"><span class="m-watch-card-stat-label">Bought</span><span class="m-watch-card-stat-val">${fmt(w.buyPrice)}</span></div><div class="m-watch-card-stat"><span class="m-watch-card-stat-label">C24 Value</span><span class="m-watch-card-stat-val gold">${fmt(w.market)}</span></div><div class="m-watch-card-stat"><span class="m-watch-card-stat-label">P&L</span><span class="m-watch-card-stat-val ${cls}">${pnl>=0?'+':''}${fmt(pnl)}</span></div><div class="m-watch-card-stat"><span class="m-watch-card-stat-label">Held</span><span class="m-watch-card-stat-val">${daysBadge(days)}</span></div></div><div class="m-watch-card-bottom" style="justify-content:flex-end"><span style="font-size:0.6rem;color:var(--text-faint);letter-spacing:0.08em">← swipe to act</span></div></div></div>`;
   }).join('');
 }
 
-function renderAll(){renderKPIs();renderDashTable();renderMobileCards();renderChart();renderFullTable();renderSoldTable();renderExportGrid();updateSmartChips();lucide.createIcons();}
+function snapBackById(id){
+  const card=document.getElementById('sw-'+id);
+  if(card){card.style.transition='transform 0.25s cubic-bezier(0.25,0.46,0.45,0.94)';card.style.transform='translateX(0)';}
+}
+
+let _revealedCard=null;
+function initSwipeCards(){
+  document.querySelectorAll('.m-swipe-outer').forEach(outer=>{
+    const card=outer.querySelector('.m-watch-card');
+    if(!card)return;
+    const REVEAL=-216; // 3 buttons × 72px
+    let sx=0,sy=0,swiping=false,axis=null;
+    outer.addEventListener('touchstart',e=>{
+      // snap any other revealed card back
+      if(_revealedCard&&_revealedCard!==card){
+        _revealedCard.style.transition='transform 0.25s cubic-bezier(0.25,0.46,0.45,0.94)';
+        _revealedCard.style.transform='translateX(0)';
+        _revealedCard=null;
+      }
+      sx=e.touches[0].clientX;sy=e.touches[0].clientY;
+      swiping=false;axis=null;
+    },{passive:true});
+    outer.addEventListener('touchmove',e=>{
+      const dx=e.touches[0].clientX-sx;const dy=e.touches[0].clientY-sy;
+      if(!axis)axis=Math.abs(dx)>Math.abs(dy)?'x':'y';
+      if(axis==='y')return;
+      swiping=true;
+      const cur=_revealedCard===card?REVEAL:0;
+      const next=Math.max(Math.min(cur+dx,0),REVEAL);
+      card.style.transition='none';
+      card.style.transform=`translateX(${next}px)`;
+    },{passive:true});
+    outer.addEventListener('touchend',e=>{
+      if(!swiping){
+        // tap while revealed → snap back
+        if(_revealedCard===card){
+          card.style.transition='transform 0.25s cubic-bezier(0.25,0.46,0.45,0.94)';
+          card.style.transform='translateX(0)';
+          _revealedCard=null;
+        }
+        return;
+      }
+      swiping=false;
+      const dx=e.changedTouches[0].clientX-sx;
+      const alreadyRevealed=_revealedCard===card;
+      if(!alreadyRevealed&&dx<-60){
+        card.style.transition='transform 0.25s cubic-bezier(0.25,0.46,0.45,0.94)';
+        card.style.transform=`translateX(${REVEAL}px)`;
+        _revealedCard=card;
+      } else {
+        card.style.transition='transform 0.25s cubic-bezier(0.25,0.46,0.45,0.94)';
+        card.style.transform='translateX(0)';
+        _revealedCard=null;
+      }
+    });
+  });
+}
+
+function renderAll(){renderKPIs();renderDashTable();renderMobileCards();renderChart();renderFullTable();renderSoldTable();renderExportGrid();updateSmartChips();lucide.createIcons();initSwipeCards();}
 
 document.addEventListener('keydown',e=>{if(e.key==='n'&&(e.metaKey||e.ctrlKey)){e.preventDefault();openAddModal();}if(e.key==='/'&&!e.target.closest('input,textarea')){e.preventDefault();document.getElementById('global-search').focus();}});
 
