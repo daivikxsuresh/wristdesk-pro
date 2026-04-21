@@ -854,6 +854,21 @@ body::before{
 }
 .m-watch-card-actions{display:flex;gap:0.25rem}
 
+/* P&L indicator dot */
+.pnl-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.pnl-dot-green{background:var(--green);box-shadow:0 0 7px var(--green)}
+.pnl-dot-red{background:var(--red);box-shadow:0 0 7px var(--red)}
+/* P&L chart modal */
+.pnl-modal-overlay{position:fixed;inset:0;background:rgba(6,9,17,0.85);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:900;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity var(--transition)}
+.pnl-modal-overlay.open{opacity:1;pointer-events:auto}
+.pnl-modal-card{background:var(--navy);border:1px solid rgba(201,169,110,0.12);border-radius:20px 20px 0 0;padding:1.5rem 1.25rem 2rem;width:100%;max-width:480px;transform:translateY(100%);transition:transform var(--transition)}
+.pnl-modal-overlay.open .pnl-modal-card{transform:translateY(0)}
+.pnl-modal-title{font-family:var(--font-display);font-size:1.3rem;font-weight:500;color:var(--text-primary);margin-bottom:0.25rem}
+.pnl-modal-sub{font-size:var(--text-xs);color:var(--text-faint);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1.2rem}
+.pnl-stat-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;margin-bottom:1.25rem}
+.pnl-stat{background:var(--navy-mid);border-radius:10px;padding:0.65rem 0.75rem;text-align:center}
+.pnl-stat-label{font-size:0.58rem;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px}
+.pnl-stat-val{font-family:var(--font-mono);font-size:var(--text-base);color:var(--text-primary)}
 /* Swipe-to-reveal card actions */
 .m-swipe-outer{position:relative;overflow:hidden;border-radius:12px}
 .m-swipe-actions{
@@ -1581,6 +1596,31 @@ body::before{
   </div>
 </div>
 
+<!-- P&L CHART MODAL -->
+<div class="pnl-modal-overlay" id="pnl-modal" onclick="if(event.target===this)closePnLModal()">
+  <div class="pnl-modal-card">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:0.2rem">
+      <div>
+        <div class="pnl-modal-title" id="pnl-modal-name">Watch</div>
+        <div class="pnl-modal-sub" id="pnl-modal-ref">—</div>
+      </div>
+      <button onclick="closePnLModal()" style="background:none;border:none;color:var(--text-faint);cursor:pointer;padding:4px;line-height:1"><i data-lucide="x" style="width:18px;height:18px"></i></button>
+    </div>
+    <div class="pnl-stat-row">
+      <div class="pnl-stat"><div class="pnl-stat-label">Bought</div><div class="pnl-stat-val" id="pnl-stat-cost">—</div></div>
+      <div class="pnl-stat"><div class="pnl-stat-label">C24 Value</div><div class="pnl-stat-val" style="color:var(--gold)" id="pnl-stat-market">—</div></div>
+      <div class="pnl-stat"><div class="pnl-stat-label">P&L</div><div class="pnl-stat-val" id="pnl-stat-pnl">—</div></div>
+    </div>
+    <div class="pnl-stat-row">
+      <div class="pnl-stat"><div class="pnl-stat-label">Return</div><div class="pnl-stat-val" id="pnl-stat-pct">—</div></div>
+      <div class="pnl-stat"><div class="pnl-stat-label">Held</div><div class="pnl-stat-val" id="pnl-stat-days">—</div></div>
+      <div class="pnl-stat"><div class="pnl-stat-label">Status</div><div class="pnl-stat-val" id="pnl-stat-status">—</div></div>
+    </div>
+    <div style="position:relative;height:180px;margin-top:0.5rem"><canvas id="pnlDetailChart"></canvas></div>
+    <div style="font-size:0.6rem;color:var(--text-faint);text-align:center;margin-top:0.5rem">Cost basis vs. C24 market value · tap outside to close</div>
+  </div>
+</div>
+
 <!-- AI SETTINGS MODAL -->
 <div class="modal-overlay" id="ai-settings-modal" onclick="if(event.target===this)closeAISettings()">
   <div class="modal" style="width:420px">
@@ -2045,7 +2085,7 @@ function toggleAuthMode(){
   document.getElementById('auth-modal-title').textContent=isSignUp?'Create Your Account':'Welcome Back';
   document.getElementById('auth-modal-sub').textContent=isSignUp?'Set up your WristDesk Pro account.':'Sign in to sync your inventory across devices.';
   document.getElementById('auth-forgot-btn').style.display=isSignUp?'none':'block';
-  document.getElementById('auth-error').textContent='';
+  const errEl=document.getElementById('auth-error');errEl.textContent='';errEl.style.color='var(--red)';
 }
 function openAuthModal(){
   lockScroll();document.getElementById('auth-modal').classList.add('open');
@@ -2081,14 +2121,23 @@ async function handleAuth(isSignUp){
   try{
     if(isSignUp){
       const name=document.getElementById('auth-name').value.trim();
-      await signUp(email,pwd,name,signupThemePick);
-      showToast('Account created! Check your email to confirm, then sign in.');
-      closeAuthModal();
+      const result=await signUp(email,pwd,name,signupThemePick);
+      if(result?.session){
+        // Email confirmation disabled — user is immediately signed in
+        closeAuthModal();
+        showToast('Welcome to WristDesk Pro!');
+      } else {
+        // Email confirmation required — stay in modal, switch to sign-in mode
+        toggleAuthMode();
+        errEl.style.color='var(--green)';
+        errEl.textContent='Account created! Check your inbox, confirm your email, then sign in below.';
+      }
     } else {
       await signIn(email,pwd);
       closeAuthModal();
     }
   }catch(e){
+    errEl.style.color='var(--red)';
     errEl.textContent=e.message||'Auth failed.';
   }finally{
     btn.disabled=false;btn.textContent=isSignUp?'Create Account':'Sign In';
@@ -3673,9 +3722,64 @@ function renderMobileCards(){
     const listLabel=w.status==='Listed'?'Unlist':'List';
     const listIcon=w.status==='Listed'?'tag-off':'tag';
     const swipeActions=`<div class="m-swipe-actions"><button class="m-swipe-action-btn swipe-sell" onclick="openSoldModal(${w.id});snapBackById(${w.id})"><i data-lucide="check-circle"></i>Sell</button><button class="m-swipe-action-btn swipe-list" onclick="toggleListed(${w.id});snapBackById(${w.id})"><i data-lucide="${listIcon}"></i>${listLabel}</button><button class="m-swipe-action-btn swipe-delete" onclick="openDeleteModal(${w.id});snapBackById(${w.id})"><i data-lucide="trash-2"></i>Del</button></div>`;
-    return`<div class="m-swipe-outer">${swipeActions}<div class="m-watch-card" id="sw-${w.id}" style="animation-delay:${i*0.05}s"><div class="m-watch-card-top"><div class="m-watch-card-name">${w.brand} ${w.model}</div>${statusBadge(w.status)}</div><div class="m-watch-card-row"><div class="m-watch-card-stat"><span class="m-watch-card-stat-label">Bought</span><span class="m-watch-card-stat-val">${fmt(w.buyPrice)}</span></div><div class="m-watch-card-stat"><span class="m-watch-card-stat-label">C24 Value</span><span class="m-watch-card-stat-val gold">${fmt(w.market)}</span></div><div class="m-watch-card-stat"><span class="m-watch-card-stat-label">P&L</span><span class="m-watch-card-stat-val ${cls}">${pnl>=0?'+':''}${fmt(pnl)}</span></div><div class="m-watch-card-stat"><span class="m-watch-card-stat-label">Held</span><span class="m-watch-card-stat-val">${daysBadge(days)}</span></div></div><div class="m-watch-card-bottom" style="justify-content:flex-end"><span style="font-size:0.6rem;color:var(--text-faint);letter-spacing:0.08em">← swipe to act</span></div></div></div>`;
+    const dotCls=pnl>=0?'pnl-dot-green':'pnl-dot-red';
+    return`<div class="m-swipe-outer">${swipeActions}<div class="m-watch-card" id="sw-${w.id}" style="animation-delay:${i*0.05}s"><div class="m-watch-card-top"><div class="m-watch-card-name">${w.brand} ${w.model}</div><div style="display:flex;align-items:center;gap:0.4rem;flex-shrink:0">${statusBadge(w.status)}<div class="pnl-dot ${dotCls}" title="${pnl>=0?'Profit':'Loss'}: ${pnl>=0?'+':''}${fmt(pnl)}"></div></div></div><div class="m-watch-card-row"><div class="m-watch-card-stat"><span class="m-watch-card-stat-label">Bought</span><span class="m-watch-card-stat-val">${fmt(w.buyPrice)}</span></div><div class="m-watch-card-stat"><span class="m-watch-card-stat-label">C24 Value</span><span class="m-watch-card-stat-val gold">${fmt(w.market)}</span></div><div class="m-watch-card-stat" style="cursor:pointer" onclick="openPnLChart(${w.id})"><span class="m-watch-card-stat-label" style="color:${pnl>=0?'var(--green)':'var(--red)'};text-decoration:underline dotted">P&L ↗</span><span class="m-watch-card-stat-val ${cls}">${pnl>=0?'+':''}${fmt(pnl)}</span></div><div class="m-watch-card-stat"><span class="m-watch-card-stat-label">Held</span><span class="m-watch-card-stat-val">${daysBadge(days)}</span></div></div><div class="m-watch-card-bottom" style="justify-content:flex-end"><span style="font-size:0.6rem;color:var(--text-faint);letter-spacing:0.08em">← swipe to act</span></div></div></div>`;
   }).join('');
 }
+
+// ── P&L DETAIL CHART ──
+let pnlDetailChart=null;
+function openPnLChart(id){
+  const w=inventory.find(x=>x.id===id);if(!w)return;
+  const pnl=w.market-w.buyPrice;
+  const pct_val=w.buyPrice?((w.market-w.buyPrice)/w.buyPrice*100).toFixed(1):0;
+  const days=daysSince(w.buyDate);
+  const isLight=getTheme()==='light';
+  document.getElementById('pnl-modal-name').textContent=`${w.brand} ${w.model}`;
+  document.getElementById('pnl-modal-ref').textContent=w.ref||'—';
+  document.getElementById('pnl-stat-cost').textContent=fmt(w.buyPrice);
+  document.getElementById('pnl-stat-market').textContent=fmt(w.market);
+  const pnlEl=document.getElementById('pnl-stat-pnl');
+  pnlEl.textContent=(pnl>=0?'+':'')+fmt(pnl);
+  pnlEl.style.color=pnl>=0?'var(--green)':'var(--red)';
+  const pctEl=document.getElementById('pnl-stat-pct');
+  pctEl.textContent=(pnl>=0?'+':'')+pct_val+'%';
+  pctEl.style.color=pnl>=0?'var(--green)':'var(--red)';
+  document.getElementById('pnl-stat-days').textContent=days+'d';
+  document.getElementById('pnl-stat-status').textContent=w.status;
+  lockScroll();document.getElementById('pnl-modal').classList.add('open');
+  const ctx=document.getElementById('pnlDetailChart');
+  if(pnlDetailChart)pnlDetailChart.destroy();
+  const txtColor=isLight?'rgba(90,80,70,0.7)':'rgba(226,221,212,0.5)';
+  const gridColor=isLight?'rgba(0,0,0,0.06)':'rgba(201,169,110,0.04)';
+  const costClr=isLight?'rgba(122,92,15,0.7)':'rgba(201,169,110,0.7)';
+  const mktClr=pnl>=0?(isLight?'rgba(21,128,64,0.7)':'rgba(111,207,151,0.7)'):(isLight?'rgba(181,48,31,0.7)':'rgba(232,124,124,0.7)');
+  pnlDetailChart=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:['Cost Basis','C24 Market Value'],
+      datasets:[{
+        data:[w.buyPrice,w.market],
+        backgroundColor:[costClr,mktClr],
+        borderColor:[costClr.replace('0.7','1'),mktClr.replace('0.7','1')],
+        borderWidth:1,borderRadius:6
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>'$'+(ctx.raw>=1000?(ctx.raw/1000).toFixed(1)+'k':ctx.raw.toFixed(0))}}
+      },
+      scales:{
+        x:{ticks:{color:txtColor,font:{size:10,family:'Outfit'}},grid:{color:gridColor}},
+        y:{ticks:{color:txtColor,callback:v=>'$'+(v>=1000?(v/1000).toFixed(0)+'k':v),font:{size:9,family:'Outfit'},maxTicksLimit:5},grid:{color:gridColor}}
+      }
+    }
+  });
+  lucide.createIcons();
+}
+function closePnLModal(){unlockScroll();document.getElementById('pnl-modal').classList.remove('open');if(pnlDetailChart){pnlDetailChart.destroy();pnlDetailChart=null;}}
 
 function snapBackById(id){
   const card=document.getElementById('sw-'+id);
