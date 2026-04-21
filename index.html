@@ -1554,8 +1554,13 @@ body::before{
   <div class="sold-card">
     <div class="sold-icon"><i data-lucide="check" style="width:28px;height:28px;color:var(--green)"></i></div>
     <div class="sold-title" id="sold-watch-name">Mark as Sold</div>
-    <div class="sold-sub">Enter the final sale price</div>
-    <input class="form-input sold-price-input" id="sold-price-input" type="number" placeholder="Sale price...">
+    <div class="sold-sub" id="sold-buy-ctx">Enter the final sale price</div>
+    <input class="form-input sold-price-input" id="sold-price-input" type="number" placeholder="Sale price..." oninput="updateSoldPreview()">
+    <div id="sold-pnl-preview" style="display:none;background:var(--navy-lighter);border-radius:10px;padding:0.75rem 1rem;margin-bottom:1rem;text-align:center">
+      <div style="font-size:0.58rem;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">Profit / Margin</div>
+      <div id="sold-pnl-amount" style="font-family:var(--font-mono);font-size:1.5rem;font-weight:700;line-height:1;margin-bottom:3px">+$0</div>
+      <div id="sold-pnl-pct" style="font-size:0.75rem">0%</div>
+    </div>
     <div class="modal-footer" style="justify-content:center">
       <button class="btn-ghost" onclick="closeSoldModal()">Cancel</button>
       <button class="btn-primary" onclick="confirmSold()">Confirm Sale</button>
@@ -2438,8 +2443,23 @@ function addWatch(){
 }
 
 // ── SOLD ──
-function openSoldModal(id){soldTarget=inventory.find(w=>w.id===id);if(!soldTarget)return;lockScroll();document.getElementById('sold-watch-name').textContent=`${soldTarget.brand} ${soldTarget.model}`;document.getElementById('sold-price-input').value=soldTarget.market;document.getElementById('sold-modal').classList.add('open');setTimeout(()=>document.getElementById('sold-price-input').focus(),100);}
+function openSoldModal(id){soldTarget=inventory.find(w=>w.id===id);if(!soldTarget)return;lockScroll();document.getElementById('sold-watch-name').textContent=`${soldTarget.brand} ${soldTarget.model}`;document.getElementById('sold-buy-ctx').textContent=`Bought for ${fmt(soldTarget.buyPrice)} · C24 ${fmt(soldTarget.market)}`;document.getElementById('sold-price-input').value=soldTarget.market;document.getElementById('sold-pnl-preview').style.display='none';document.getElementById('sold-modal').classList.add('open');setTimeout(()=>{document.getElementById('sold-price-input').focus();updateSoldPreview();},100);}
 function closeSoldModal(){unlockScroll();document.getElementById('sold-modal').classList.remove('open');soldTarget=null;}
+function updateSoldPreview(){
+  if(!soldTarget)return;
+  const sp=parseFloat(document.getElementById('sold-price-input').value);
+  const preview=document.getElementById('sold-pnl-preview');
+  if(!sp||isNaN(sp)){preview.style.display='none';return;}
+  preview.style.display='block';
+  const pnl=sp-soldTarget.buyPrice;
+  const pct=((pnl/soldTarget.buyPrice)*100).toFixed(1);
+  const isPos=pnl>=0;
+  const color=isPos?'var(--green)':'var(--red)';
+  document.getElementById('sold-pnl-amount').textContent=(isPos?'+':'')+fmt(Math.abs(pnl));
+  document.getElementById('sold-pnl-amount').style.color=color;
+  document.getElementById('sold-pnl-pct').textContent=(isPos?'+':'')+pct+'% on cost';
+  document.getElementById('sold-pnl-pct').style.color=color;
+}
 function confirmSold(){if(!soldTarget)return;const sp=parseFloat(document.getElementById('sold-price-input').value);if(!sp){showToast('Enter a valid price');return;}const _soldName=`${soldTarget.brand} ${soldTarget.model}`;soldTarget.status='Sold';soldTarget.soldPrice=sp;soldTarget.soldDate=new Date().toISOString().split('T')[0];closeSoldModal();saveInv();renderAll();showToast(`${_soldName} sold for ${fmt(sp)}`);}
 
 // ── DELETE ──
