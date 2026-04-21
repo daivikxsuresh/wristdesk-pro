@@ -1986,7 +1986,8 @@ try{
 // ── AUTH ──
 async function signUp(email,pwd,name,theme){
   if(!supa){showToast('Cloud not available — try refreshing');return;}
-  const{data,error}=await supa.auth.signUp({email,password:pwd,options:{data:{display_name:name||'',theme:theme||'dark'}}});
+  const redirectTo='https://daivikxsuresh.github.io/wristdesk-pro/';
+  const{data,error}=await supa.auth.signUp({email,password:pwd,options:{emailRedirectTo:redirectTo,data:{display_name:name||'',theme:theme||'dark'}}});
   if(error) throw error;
   return data;
 }
