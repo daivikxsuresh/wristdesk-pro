@@ -1123,6 +1123,43 @@ body::before{
   font-size:var(--text-sm);margin-bottom:0.75rem;
 }
 
+/* ── TYPING INDICATOR ── */
+.typing-bubble{display:flex;align-items:center;gap:4px;padding:0.55rem 0.8rem!important;min-width:48px}
+.typing-dot{
+  display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:var(--gold);opacity:0.4;flex-shrink:0;
+  animation:typingBounce 1.2s infinite ease-in-out;
+}
+.typing-dot:nth-child(2){animation-delay:0.2s}
+.typing-dot:nth-child(3){animation-delay:0.4s}
+@keyframes typingBounce{0%,80%,100%{transform:translateY(0);opacity:0.4}40%{transform:translateY(-5px);opacity:1}}
+
+/* ── SPEAK BUTTON ── */
+.speak-btn{
+  background:none;border:none;cursor:pointer;
+  color:var(--text-faint);font-size:0.68rem;
+  padding:2px 4px;border-radius:4px;
+  margin-top:3px;display:inline-flex;align-items:center;gap:3px;
+  transition:color var(--transition);
+  -webkit-tap-highlight-color:transparent;
+  font-family:var(--font-body);
+}
+.speak-btn:hover,.speak-btn:active{color:var(--gold)}
+.speak-btn.speaking{color:var(--gold);animation:speakPulse 1s ease infinite}
+@keyframes speakPulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* ── AI LIST ── */
+.ai-bubble .ai-list,.msg-bubble .ai-list{margin:0.3rem 0 0.2rem 1rem;padding:0;list-style:disc}
+.ai-bubble .ai-list li,.msg-bubble .ai-list li{margin-bottom:0.15rem}
+
+/* ── ACTIVE STATE FLASH (iOS tap feedback) ── */
+.btn-primary:active{transform:scale(0.96);transition:transform 0.08s!important}
+.btn-ghost:active{transform:scale(0.96);transition:transform 0.08s!important}
+.btn-danger:active{transform:scale(0.96);transition:transform 0.08s!important}
+.export-dl-btn:active{transform:scale(0.96);opacity:0.85}
+.action-btn:active{transform:scale(0.9)!important;opacity:0.8}
+.chip:active{transform:scale(0.95);opacity:0.8}
+
 /* Hide mobile elements on desktop */
 .mobile-tabbar{display:none}
 .mobile-menu-btn{display:none}
@@ -1201,7 +1238,7 @@ body::before{
       <i data-lucide="search"></i> Price Lookup
     </button>
     <button class="nav-item" data-view="identify" onclick="switchView('identify',this)">
-      <i data-lucide="camera"></i> Identify Watch
+      <i data-lucide="camera"></i> Listing Generator
     </button>
     <button class="nav-item" data-view="ai" onclick="switchView('ai',this)">
       <i data-lucide="bot"></i> AI Assistant
@@ -1388,8 +1425,8 @@ body::before{
     <div class="view-scroll">
       <div class="card" style="max-width:560px;margin:0 auto">
         <div class="card-header">
-          <span class="card-title">Watch Identifier</span>
-          <span style="font-size:var(--text-xs);color:var(--gold)">Upload a photo</span>
+          <span class="card-title">Listing Generator</span>
+          <span style="font-size:var(--text-xs);color:var(--gold)">Photo → AI listing copy</span>
         </div>
         <div class="card-body">
           <div class="upload-zone" id="upload-zone" onclick="document.getElementById('watch-upload').click()">
@@ -1975,7 +2012,7 @@ function toggleAuthMode(){
   document.getElementById('auth-error').textContent='';
 }
 function openAuthModal(){
-  document.getElementById('auth-modal').classList.add('open');
+  lockScroll();document.getElementById('auth-modal').classList.add('open');
   // Reset to sign-in mode
   document.getElementById('signup-fields').style.display='none';
   document.getElementById('auth-submit-btn').textContent='Sign In';
@@ -1990,7 +2027,7 @@ function openAuthModal(){
   document.getElementById('pick-dark').style.borderColor=t==='dark'?'var(--gold)':'var(--navy-lighter)';
   document.getElementById('pick-light').style.borderColor=t==='light'?'var(--gold)':'var(--navy-lighter)';
 }
-function closeAuthModal(){document.getElementById('auth-modal').classList.remove('open');document.getElementById('auth-error').textContent='';}
+function closeAuthModal(){unlockScroll();document.getElementById('auth-modal').classList.remove('open');document.getElementById('auth-error').textContent='';}
 
 async function handleAuth(isSignUp){
   const email=document.getElementById('auth-email').value.trim();
@@ -2319,8 +2356,8 @@ function renderChart(){
 function handleSearch(q){searchQuery=q;renderAll();}
 
 // ── ADD ──
-function openAddModal(){document.getElementById('add-modal').classList.add('open');document.getElementById('f-date').value=new Date().toISOString().split('T')[0];document.getElementById('f-brand').focus();}
-function closeModal(){document.getElementById('add-modal').classList.remove('open');document.getElementById('fetch-status').innerHTML='';['f-brand','f-model','f-ref','f-year','f-price'].forEach(id=>document.getElementById(id).value='');}
+function openAddModal(){lockScroll();document.getElementById('add-modal').classList.add('open');document.getElementById('f-date').value=new Date().toISOString().split('T')[0];setTimeout(()=>document.getElementById('f-brand').focus(),50);}
+function closeModal(){unlockScroll();document.getElementById('add-modal').classList.remove('open');document.getElementById('fetch-status').innerHTML='';['f-brand','f-model','f-ref','f-year','f-price'].forEach(id=>document.getElementById(id).value='');}
 function addWatch(){
   const brand=document.getElementById('f-brand').value.trim(),model=document.getElementById('f-model').value.trim(),price=parseFloat(document.getElementById('f-price').value);
   if(!brand||!model||!price){showToast('Fill in brand, model & price');return;}
@@ -2336,13 +2373,13 @@ function addWatch(){
 }
 
 // ── SOLD ──
-function openSoldModal(id){soldTarget=inventory.find(w=>w.id===id);if(!soldTarget)return;document.getElementById('sold-watch-name').textContent=`${soldTarget.brand} ${soldTarget.model}`;document.getElementById('sold-price-input').value=soldTarget.market;document.getElementById('sold-modal').classList.add('open');setTimeout(()=>document.getElementById('sold-price-input').focus(),100);}
-function closeSoldModal(){document.getElementById('sold-modal').classList.remove('open');soldTarget=null;}
+function openSoldModal(id){soldTarget=inventory.find(w=>w.id===id);if(!soldTarget)return;lockScroll();document.getElementById('sold-watch-name').textContent=`${soldTarget.brand} ${soldTarget.model}`;document.getElementById('sold-price-input').value=soldTarget.market;document.getElementById('sold-modal').classList.add('open');setTimeout(()=>document.getElementById('sold-price-input').focus(),100);}
+function closeSoldModal(){unlockScroll();document.getElementById('sold-modal').classList.remove('open');soldTarget=null;}
 function confirmSold(){if(!soldTarget)return;const sp=parseFloat(document.getElementById('sold-price-input').value);if(!sp){showToast('Enter a valid price');return;}const _soldName=`${soldTarget.brand} ${soldTarget.model}`;soldTarget.status='Sold';soldTarget.soldPrice=sp;soldTarget.soldDate=new Date().toISOString().split('T')[0];closeSoldModal();saveInv();renderAll();showToast(`${_soldName} sold for ${fmt(sp)}`);}
 
 // ── DELETE ──
-function openDeleteModal(id){deleteTarget=inventory.find(w=>w.id===id);if(!deleteTarget)return;document.getElementById('delete-watch-name').textContent=`Delete ${deleteTarget.brand} ${deleteTarget.model}?`;document.getElementById('delete-modal').classList.add('open');}
-function closeDeleteModal(){document.getElementById('delete-modal').classList.remove('open');deleteTarget=null;}
+function openDeleteModal(id){deleteTarget=inventory.find(w=>w.id===id);if(!deleteTarget)return;lockScroll();document.getElementById('delete-watch-name').textContent=`Delete ${deleteTarget.brand} ${deleteTarget.model}?`;document.getElementById('delete-modal').classList.add('open');}
+function closeDeleteModal(){unlockScroll();document.getElementById('delete-modal').classList.remove('open');deleteTarget=null;}
 function confirmDelete(){if(!deleteTarget)return;const n=`${deleteTarget.brand} ${deleteTarget.model}`;inventory=inventory.filter(w=>w.id!==deleteTarget.id);closeDeleteModal();saveInv();renderAll();showToast(`${n} removed`);}
 function toggleListed(id){const w=inventory.find(x=>x.id===id);if(!w)return;w.status=w.status==='Listed'?'In Stock':'Listed';saveInv();renderAll();showToast(`${w.brand} ${w.model} -> ${w.status}`);}
 
@@ -2444,22 +2481,102 @@ const ID_WATCHES=[
   {brand:'Cartier',model:'Santos',ref:'WSSA0018',confidence:90,desc:'Santos de Cartier, medium. SmartLink QuickSwitch bracelet.'},
   {brand:'IWC',model:'Portugieser',ref:'IW500710',confidence:89,desc:'Automatic 7-Day 42.3mm, blue dial. Pellaton winding, Cal. 52010.'},
 ];
-function handleUpload(input){const f=input.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{document.getElementById('upload-preview-area').innerHTML=`<img src="${e.target.result}" class="upload-preview">`;identifyWatch();};r.readAsDataURL(f);}
+let pendingIdentifyBase64=null;
+function handleUpload(input){
+  const f=input.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    const dataUrl=e.target.result;
+    pendingIdentifyBase64=dataUrl.split(',')[1];
+    document.getElementById('upload-preview-area').innerHTML=`<img src="${dataUrl}" class="upload-preview">`;
+    identifyWatch();
+  };
+  r.readAsDataURL(f);
+}
 document.addEventListener('DOMContentLoaded',()=>{
   const z=document.getElementById('upload-zone');if(!z)return;
   z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('drag-over');});
   z.addEventListener('dragleave',()=>z.classList.remove('drag-over'));
   z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/')){const dt=new DataTransfer();dt.items.add(f);const inp=document.getElementById('watch-upload');inp.files=dt.files;handleUpload(inp);}});
 });
-function identifyWatch(){
+async function identifyWatch(){
+  if(!pendingIdentifyBase64)return;
   const el=document.getElementById('identify-result');
-  el.innerHTML=`<div class="fetch-row"><div class="fetch-spinner"></div>Analyzing image...</div>`;
-  setTimeout(()=>{el.innerHTML=`<div class="fetch-row"><div class="fetch-spinner"></div>Cross-referencing Chrono24...</div>`;
-  setTimeout(()=>{
-    const w=ID_WATCHES[Math.floor(Math.random()*ID_WATCHES.length)];
-    const d=lookupC24(w.brand,w.model+' '+w.ref,'Good');
-    el.innerHTML=`<div class="identify-result"><div class="identify-header"><div class="identify-brand">${w.brand} ${w.model}</div><span class="identify-confidence">${w.confidence}% match</span></div><div class="watch-ref" style="margin-bottom:0.4rem">Ref. ${w.ref}</div><p style="font-size:var(--text-sm);color:var(--text-secondary);margin-bottom:0.75rem">${w.desc}</p><div class="identify-grid"><div class="kpi-card" style="background:var(--navy)"><div class="kpi-label">Low</div><div class="kpi-value" style="font-size:1rem">${fmt(d.low)}</div></div><div class="kpi-card" style="background:var(--gold-dim);border-color:rgba(201,169,110,0.15)"><div class="kpi-label">Fair Value</div><div class="kpi-value" style="font-size:1rem;color:var(--gold)">${fmt(d.fair)}</div></div><div class="kpi-card" style="background:var(--navy)"><div class="kpi-label">High</div><div class="kpi-value" style="font-size:1rem">${fmt(d.high)}</div></div></div><div style="display:flex;gap:0.5rem;margin-top:1rem"><button class="btn-primary" onclick="document.getElementById('f-brand').value='${w.brand}';document.getElementById('f-model').value='${w.model}';document.getElementById('f-ref').value='${w.ref}';openAddModal()" style="flex:1;font-size:var(--text-xs)">+ Add to Collection</button><button class="btn-ghost" onclick="document.getElementById('upload-preview-area').innerHTML='';document.getElementById('identify-result').innerHTML='';document.getElementById('watch-upload').value=''" style="font-size:var(--text-xs)">Clear</button></div></div>`;
-  },1200);},1000);
+  el.innerHTML=`<div class="fetch-row"><div class="fetch-spinner"></div>AI Vision analyzing watch...</div>`;
+  const prompt=`You are a luxury watch expert and grey market dealer. Analyze this watch photo and respond with EXACTLY this format (use these exact headers):
+
+**IDENTIFICATION**
+Brand: [brand name]
+Model: [model name]
+Reference: [ref number or best guess, e.g. 126710BLNR]
+Year: [year or range, e.g. 2021-2023]
+Condition: [Unworn / Like New / Good / Fair — based on what you can see]
+
+**ASKING PRICE**
+[Grey market asking price range in USD, e.g. $18,000 – $20,500]
+
+**LISTING TITLE**
+[A punchy 60-character max title for Chrono24 or eBay]
+
+**DESCRIPTION**
+[3-4 sentences of professional marketplace listing copy: key features, condition, bracelet/strap, dial, movement, collectibility]
+
+If image quality limits identification, give your best assessment and note it briefly.`;
+  try{
+    const reply=await callGroqVision(pendingIdentifyBase64,prompt,null);
+    renderIdentifyResult(reply);
+  }catch(e){
+    el.innerHTML=`<div style="color:var(--red);font-size:var(--text-sm);padding:0.75rem 0">Analysis failed — try a clearer photo.</div>`;
+  }
+}
+function renderIdentifyResult(text){
+  const el=document.getElementById('identify-result');
+  const getSection=(heading,nextHeading)=>{
+    const re=new RegExp(`\\*\\*${heading}\\*\\*([\\s\\S]*?)(?=\\*\\*${nextHeading}\\*\\*|$)`,'i');
+    const m=text.match(re);return m?m[1].trim():'';
+  };
+  const identification=getSection('IDENTIFICATION','ASKING PRICE');
+  const askingPrice=getSection('ASKING PRICE','LISTING TITLE');
+  const listingTitle=getSection('LISTING TITLE','DESCRIPTION');
+  const description=getSection('DESCRIPTION','$');
+  const brandMatch=identification.match(/Brand:\s*(.+)/i);
+  const modelMatch=identification.match(/Model:\s*(.+)/i);
+  const refMatch=identification.match(/Reference:\s*(.+)/i);
+  const condMatch=identification.match(/Condition:\s*(.+)/i);
+  const brand=(brandMatch?brandMatch[1].trim():'').replace(/['"]/g,'');
+  const model=(modelMatch?modelMatch[1].trim():'').replace(/['"]/g,'');
+  const ref=(refMatch?refMatch[1].trim():'').replace(/['"]/g,'');
+  const cond=condMatch?condMatch[1].trim():'Good';
+  const validCond=['Unworn','Like New','Good','Fair'];
+  const cleanCond=validCond.find(c=>cond.toLowerCase().includes(c.toLowerCase()))||'Good';
+  // If parsing failed, show raw AI response in a clean card
+  if(!brand&&!model){
+    el.innerHTML=`<div class="identify-result"><p style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.6">${sanitize(text)}</p></div>`;
+    return;
+  }
+  const safeB=brand.replace(/'/g,"\\'");const safeM=model.replace(/'/g,"\\'");const safeR=ref.replace(/'/g,"\\'");
+  el.innerHTML=`<div class="identify-result">
+    <div class="identify-header">
+      <div class="identify-brand">${brand} ${model}</div>
+      <span class="identify-confidence" style="background:var(--gold-dim);color:var(--gold);font-size:var(--text-xs);padding:3px 8px;border-radius:4px">AI Vision</span>
+    </div>
+    ${ref&&ref!=='-'?`<div class="watch-ref" style="margin-bottom:0.5rem;font-size:var(--text-sm);color:var(--text-secondary)">Ref. ${ref}</div>`:''}
+    ${askingPrice?`<div style="background:var(--navy);border:1px solid rgba(201,169,110,0.12);border-radius:8px;padding:0.65rem 0.85rem;margin-bottom:0.75rem;display:flex;align-items:center;justify-content:space-between"><span style="font-size:var(--text-xs);color:var(--text-faint);text-transform:uppercase;letter-spacing:0.08em">Asking Price</span><span style="font-family:var(--font-display);font-size:var(--text-lg);color:var(--gold)">${askingPrice}</span></div>`:''}
+    ${listingTitle?`<div style="margin-bottom:0.75rem"><div style="font-size:var(--text-xs);color:var(--text-faint);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.3rem">Listing Title</div><div style="font-size:var(--text-sm);color:var(--text-primary);font-weight:500;background:var(--navy-mid);padding:0.5rem 0.65rem;border-radius:6px">${listingTitle}</div></div>`:''}
+    ${description?`<div style="margin-bottom:0.75rem"><div style="font-size:var(--text-xs);color:var(--text-faint);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.3rem">Description</div><p style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.6">${description}</p></div>`:''}
+    <div style="display:flex;gap:0.5rem;margin-top:1rem">
+      <button class="btn-primary" onclick="prefillAddFromListing('${safeB}','${safeM}','${safeR}','${cleanCond}')" style="flex:1;font-size:var(--text-xs)">+ Add to Inventory</button>
+      <button class="btn-ghost" onclick="document.getElementById('upload-preview-area').innerHTML='';document.getElementById('identify-result').innerHTML='';document.getElementById('watch-upload').value='';pendingIdentifyBase64=null;" style="font-size:var(--text-xs)">Clear</button>
+    </div>
+  </div>`;
+}
+function prefillAddFromListing(brand,model,ref,condition){
+  document.getElementById('f-brand').value=brand;
+  document.getElementById('f-model').value=model;
+  document.getElementById('f-ref').value=ref||'-';
+  const sel=document.getElementById('f-condition');
+  if(sel){for(let i=0;i<sel.options.length;i++){if(sel.options[i].value===condition){sel.selectedIndex=i;break;}}}
+  openAddModal();
 }
 
 // ── WATCH ALIASES (street names, nicknames, shorthand) ──
@@ -2525,14 +2642,17 @@ function buildSystemPrompt(){
   const soldSummary=sold.slice(-8).map(w=>{const p=w.soldPrice-w.buyPrice;return`- ${w.brand} ${w.model}: bought ${fmt(w.buyPrice)} → sold ${fmt(w.soldPrice)} (${p>=0?'+':'-'}${fmt(p)})`;}).join('\n');
   const slowAlert=slowMovers.length?`\nALERT: ${slowMovers.length} watch${slowMovers.length>1?'es':''} over 30 days: ${slowMovers.map(w=>`${w.brand} ${w.model} (${daysSince(w.buyDate)}d)`).join(', ')}. Flag for discounting.`:'';
   const bestAlert=bestMargin?`\nBEST HOLD: ${bestMargin.brand} ${bestMargin.model} at +${fmt(bestMargin.market-bestMargin.buyPrice)} unrealized.`:'';
-  return `You are WristDesk AI — a razor-sharp watch dealer assistant built for speed. You run a fast-paced grey market operation.
+  return `You are WristDesk AI — a grey market watch dealer's brain. Unfiltered, brutally honest, zero filler. Text like a dealer friend, not a chatbot.
 
-SPEED RULES (critical):
-- For inventory actions (add/sell/delete): 1 sentence max + command block. No filler.
-- For quick queries (stock count, profit, margin): 1-2 sentences. Numbers only.
-- For research (what to buy, market trends, valuations): 2-4 sentences max.
-- NEVER say "Sure!", "Great!", "Of course!", "I'd be happy to" or any filler opener.
-- Start every response with the answer, not a preamble.
+RULES (non-negotiable):
+- Commands (add/sell/delete/update): 1 tight sentence + cmd block. Nothing else.
+- Quick stats (stock, profit, margin): numbers only, 1-2 sentences MAX.
+- Analysis/advice: 2-4 tight sentences. No essays, no hedging.
+- NEVER open with "Sure!", "Great!", "Of course!", "Certainly!", "Absolutely!", "I'd be happy to", "I can help with that", or ANY filler. Ever.
+- NEVER add disclaimers, market uncertainty warnings, or hedge language. Give the verdict directly.
+- First word of every response = the answer or the key number. No preamble.
+- If a watch is a brick, say "brick." If it's a hold, say "hold." If it's time to dump, say "dump it."
+- Use slang naturally when it fits: copped, flipped, grey, brick, bag, dump, sitting, AD, spread, pop, retail, premium.
 
 MARKET CONTEXT (Q1-Q2 2026):
 - Rolex: Sports refs stable, ADs normalizing. Sub, GMT, Daytona hold well.
@@ -2617,8 +2737,10 @@ async function callGroq(userMsg, onToken){
   const contextNote=aliasMatch?`\n[Note: "${aliasMatch.alias}"="${aliasMatch.resolved}"]`:'';
   aiHistory.push({role:'user',content:userMsg+contextNote});
   if(aiHistory.length>24) aiHistory=aiHistory.slice(-24);
+  const isSimpleCommand=/\b(add|sell|sold|delete|remove|list|unlist|update|p&l|summary|profit|stock|how many|count)\b/i.test(userMsg);
+  const chosenModel=isSimpleCommand?'llama-3.1-8b-instant':(localStorage.getItem('wristdesk_groq_model')||'llama-3.3-70b-versatile');
   const body={
-    model:localStorage.getItem('wristdesk_groq_model')||'llama-3.3-70b-versatile',
+    model:chosenModel,
     messages:[{role:'system',content:buildSystemPrompt()},...aiHistory],
     temperature:0.35, max_tokens:500,
     stream:!!onToken
@@ -2691,15 +2813,92 @@ function finalizeStreamBubble(panel,fullText){
   if(!el) return;
   const cursor=el.querySelector('.ai-cursor');if(cursor) cursor.remove();
   const t=el.querySelector('.stream-text');
-  if(t) t.innerHTML=sanitize(parseAndExecuteCmd(fullText));
+  const finalText=parseAndExecuteCmd(fullText);
+  if(t) t.innerHTML=sanitize(finalText);
   el.id='';
+  // Add speak button after bubble
+  const bubble=el.querySelector('.msg-bubble,.stream-bubble');
+  if(bubble){
+    bubble.classList.remove('stream-bubble');
+    const speakBtn=document.createElement('button');
+    speakBtn.className='speak-btn';
+    speakBtn.title='Read aloud';
+    speakBtn.innerHTML='🔊 speak';
+    speakBtn.onclick=()=>speakResponse(finalText,speakBtn);
+    const timeEl=el.querySelector('.msg-time');
+    if(timeEl)timeEl.insertAdjacentElement('beforebegin',speakBtn);
+    else bubble.insertAdjacentElement('afterend',speakBtn);
+  }
   const c=document.getElementById(`ai-messages-${panel}`);
   if(c) c.scrollTop=c.scrollHeight;
 }
 
+// ── TYPING INDICATOR ──
+function showTypingIndicator(panel){
+  const el=document.getElementById(`ai-messages-${panel}`);
+  if(!el)return;
+  const existing=document.getElementById(`typing-ind-${panel}`);
+  if(existing)existing.remove();
+  const div=document.createElement('div');
+  div.className='msg msg-ai';div.id=`typing-ind-${panel}`;
+  div.innerHTML=`<div class="msg-avatar">W</div><div><div class="msg-bubble typing-bubble"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div></div>`;
+  el.appendChild(div);el.scrollTop=el.scrollHeight;
+}
+function removeTypingIndicator(panel){
+  const el=document.getElementById(`typing-ind-${panel}`);
+  if(el)el.remove();
+}
+
+// ── TTS (Groq PlayAI) ──
+let currentAudio=null;
+async function speakResponse(text,btn){
+  if(currentAudio&&!currentAudio.ended){
+    currentAudio.pause();currentAudio.currentTime=0;currentAudio=null;
+    document.querySelectorAll('.speak-btn.speaking').forEach(b=>{b.classList.remove('speaking');b.innerHTML='🔊 speak';});
+    return;
+  }
+  const clean=text.replace(/\*\*/g,'').replace(/[*_`]/g,'').replace(/<[^>]+>/g,'').replace(/```[^`]*```/gs,'').trim();
+  if(!clean||clean.length<3)return;
+  const key=getGroqKey();if(!key)return;
+  if(btn){btn.classList.add('speaking');btn.innerHTML='⏹ stop';}
+  try{
+    const res=await fetch('https://api.groq.com/openai/v1/audio/speech',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
+      body:JSON.stringify({model:'playai-tts',voice:'Fritz-PlayAI',input:clean.slice(0,4000)})
+    });
+    if(!res.ok){if(btn){btn.classList.remove('speaking');btn.innerHTML='🔊 speak';}return;}
+    const blob=await res.blob();
+    const url=URL.createObjectURL(blob);
+    currentAudio=new Audio(url);
+    currentAudio.play();
+    currentAudio.onended=()=>{
+      if(btn){btn.classList.remove('speaking');btn.innerHTML='🔊 speak';}
+      URL.revokeObjectURL(url);currentAudio=null;
+    };
+  }catch(e){if(btn){btn.classList.remove('speaking');btn.innerHTML='🔊 speak';}}
+}
+
+// ── SCROLL LOCK (iOS modal background scroll fix) ──
+let _scrollY=0;
+function lockScroll(){
+  _scrollY=window.scrollY;
+  document.body.style.overflow='hidden';
+  document.body.style.position='fixed';
+  document.body.style.top=`-${_scrollY}px`;
+  document.body.style.width='100%';
+}
+function unlockScroll(){
+  document.body.style.overflow='';
+  document.body.style.position='';
+  document.body.style.top='';
+  document.body.style.width='';
+  window.scrollTo(0,_scrollY);
+}
+
 // ── AI SETTINGS ──
 function openAISettings(){
-  document.getElementById('ai-settings-modal').classList.add('open');
+  lockScroll();document.getElementById('ai-settings-modal').classList.add('open');
   const masterActive=hasMasterKey();
   document.getElementById('master-key-notice').style.display=masterActive?'block':'none';
   document.getElementById('user-key-section').style.display=masterActive?'none':'block';
@@ -2708,7 +2907,7 @@ function openAISettings(){
   document.getElementById('groq-model-select').value=localStorage.getItem('wristdesk_groq_model')||'llama-3.3-70b-versatile';
   document.getElementById('ai-connection-status').textContent='';
 }
-function closeAISettings(){document.getElementById('ai-settings-modal').classList.remove('open');}
+function closeAISettings(){unlockScroll();document.getElementById('ai-settings-modal').classList.remove('open');}
 function saveAISettings(){
   setGroqKey(document.getElementById('groq-key-input').value.trim());
   localStorage.setItem('wristdesk_groq_model',document.getElementById('groq-model-select').value);
@@ -2895,8 +3094,31 @@ function updateSmartChips(panel){
 
 // ── AI ──
 function sanitize(str){
-  // Allow <strong>, <em>, <a>, <br> but strip everything else
-  return str.replace(/<(?!\/?(?:strong|em|a |a>|br))[^>]*>/gi,'');
+  let s=str;
+  // Convert **bold** → <strong>
+  s=s.replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>');
+  // Convert *italic* → <em> (not already in strong)
+  s=s.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g,'<em>$1</em>');
+  // Convert bullet lists (- item or • item) → <ul><li>
+  const lines=s.split('\n');
+  let inList=false;const result=[];
+  for(const line of lines){
+    const stripped=line.trim();
+    if(/^[-•]\s/.test(stripped)){
+      if(!inList){result.push('<ul class="ai-list">');inList=true;}
+      result.push(`<li>${stripped.replace(/^[-•]\s*/,'')}</li>`);
+    }else{
+      if(inList){result.push('</ul>');inList=false;}
+      result.push(line);
+    }
+  }
+  if(inList)result.push('</ul>');
+  s=result.join('\n');
+  // Paragraph breaks and newlines
+  s=s.replace(/\n\n+/g,'<br><br>');
+  s=s.replace(/\n/g,'<br>');
+  // Strip unsafe HTML, keep known-safe tags
+  return s.replace(/<(?!\/?(?:strong|em|a |a>|br|ul|li))[^>]*>/gi,'');
 }
 function getUserName(){
   if(currentUser?.user_metadata?.display_name) return currentUser.user_metadata.display_name;
@@ -2940,7 +3162,7 @@ async function toggleThemeUI(){
 let profTheme='dark';
 function openProfileModal(){
   if(!currentUser) return;
-  document.getElementById('profile-name').value=currentUser.user_metadata?.display_name||'';
+  lockScroll();document.getElementById('profile-name').value=currentUser.user_metadata?.display_name||'';
   document.getElementById('profile-email').value=currentUser.email||'';
   profTheme=getTheme();
   document.getElementById('prof-pick-dark').style.borderColor=profTheme==='dark'?'var(--gold)':'var(--navy-lighter)';
@@ -2949,7 +3171,7 @@ function openProfileModal(){
   document.getElementById('profile-modal').classList.add('open');
   document.getElementById('profile-name').focus();
 }
-function closeProfileModal(){document.getElementById('profile-modal').classList.remove('open');}
+function closeProfileModal(){unlockScroll();document.getElementById('profile-modal').classList.remove('open');}
 function profPickTheme(t){
   profTheme=t;
   document.getElementById('prof-pick-dark').style.borderColor=t==='dark'?'var(--gold)':'var(--navy-lighter)';
@@ -3304,17 +3526,24 @@ async function sendAI(msg,panel){
   // Text mode
   addMsg(msg,'user',panel);
   if(getGroqKey()){
-    appendStreamBubble(panel);
+    showTypingIndicator(panel);
+    let streamStarted=false;
     const fullReply=await callGroq(msg,(chunk,full)=>{
+      if(!streamStarted){
+        removeTypingIndicator(panel);
+        appendStreamBubble(panel);
+        streamStarted=true;
+      }
       updateStreamBubble(panel,full);
     });
     if(fullReply!==null){
+      if(!streamStarted){removeTypingIndicator(panel);appendStreamBubble(panel);}
       finalizeStreamBubble(panel,fullReply);
       updateSmartChips(panel);
       setAIBusy(false);
       return;
     }
-    // Remove bubble if key failed (fallback below)
+    removeTypingIndicator(panel);
     const b=document.getElementById('stream-bubble-'+panel);if(b)b.remove();
   }
   // Fallback: local AI
@@ -3326,8 +3555,8 @@ function refreshPrices(){showToast('Refreshing...');inventory.filter(w=>w.status
 function exportCSV(){const h='Brand,Model,Ref,Year,Condition,Buy Price,Buy Date,Channel,C24 Value,Status,Sold Price,Sold Date,Days Held,P&L\n';const rows=inventory.map(w=>`"${w.brand}","${w.model}","${w.ref}","${w.year}","${w.condition}",${w.buyPrice},${w.buyDate},"${w.channel}",${w.market},"${w.status}",${w.soldPrice||''},${w.soldDate||''},${holdDays(w)},${w.status==='Sold'?w.soldPrice-w.buyPrice:w.market-w.buyPrice}`).join('\n');const a=document.createElement('a');a.href='data:text/csv,'+encodeURIComponent(h+rows);a.download='wristdesk-pro.csv';a.click();showToast('CSV exported');}
 function showToast(msg){const t=document.createElement('div');t.className='toast';t.innerHTML=msg;document.getElementById('toast-container').appendChild(t);setTimeout(()=>t.remove(),3500);}
 
-const viewTitles={dashboard:'Dashboard',inventory:'Inventory',sold:'Sold Watches',dealcheck:'Deal Checker',lookup:'Price Lookup',identify:'Watch Identifier',ai:'AI Assistant',export:'Export'};
-const viewBadges={dashboard:'LIVE',inventory:'ALL',sold:'REALIZED',dealcheck:'BUY / PASS',lookup:'CHRONO24',identify:'VISION',ai:'NLP',export:'CSV'};
+const viewTitles={dashboard:'Dashboard',inventory:'Inventory',sold:'Sold Watches',dealcheck:'Deal Checker',lookup:'Price Lookup',identify:'Listing Generator',ai:'AI Assistant',export:'Export'};
+const viewBadges={dashboard:'LIVE',inventory:'ALL',sold:'REALIZED',dealcheck:'BUY / PASS',lookup:'CHRONO24',identify:'AI VISION',ai:'NLP',export:'CSV'};
 function switchView(v,btn){document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));document.getElementById('view-'+v).classList.add('active');document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));if(btn)btn.classList.add('active');document.getElementById('page-title').textContent=viewTitles[v]||v;const badge=document.getElementById('page-badge');if(badge&&!currentUser){badge.textContent='GUEST';}else if(badge&&viewBadges[v]){badge.textContent=viewBadges[v];}renderAll();}
 
 // ── EXPORT VIEW ──
@@ -3410,6 +3639,14 @@ window.addEventListener('DOMContentLoaded',()=>{
   updateAuthUI();
   updateGuestBanner();
   updateSmartChips();
+  // iOS keyboard push fix
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize',()=>{
+      ['ai-messages-full','ai-messages-dash'].forEach(id=>{
+        const el=document.getElementById(id);if(el)el.scrollTop=el.scrollHeight;
+      });
+    });
+  }
   const aiReady=!!getGroqKey();
   const uname=getUserName();
   const greeting=uname&&uname!=='Guest'?`Hey ${uname}!`:'Hey!';
