@@ -2055,7 +2055,7 @@ try{
 // ── AUTH ──
 async function signUp(email,pwd,name,theme){
   if(!supa){showToast('Cloud not available — try refreshing');return;}
-  const redirectTo='https://daivikxsuresh.github.io/wristdesk-pro/';
+  const redirectTo='https://daiviksuresh.com/wristdesk';
   const{data,error}=await supa.auth.signUp({email,password:pwd,options:{emailRedirectTo:redirectTo,data:{display_name:name||'',theme:theme||'dark'}}});
   if(error) throw error;
   return data;
@@ -2126,7 +2126,7 @@ async function handleForgotPwd(){
   const errEl=document.getElementById('auth-error');
   if(!email){errEl.textContent='Enter your email first, then click Forgot password.';errEl.style.color='var(--gold)';return;}
   try{
-    const{error}=await supa.auth.resetPasswordForEmail(email,{redirectTo:'https://daivikxsuresh.github.io/wristdesk-pro/'});
+    const{error}=await supa.auth.resetPasswordForEmail(email,{redirectTo:'https://daiviksuresh.com/wristdesk'});
     if(error) throw error;
     errEl.textContent='Password reset link sent! Check your email.';errEl.style.color='var(--green)';
   }catch(e){errEl.textContent=e.message||'Failed to send reset email.';errEl.style.color='var(--red)';}
