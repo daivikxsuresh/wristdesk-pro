@@ -2045,6 +2045,7 @@ const SUPABASE_URL='https://ntoxahwhozjozmovkezs.supabase.co';
 const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50b3hhaHdob3pqb3ptb3ZrZXpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2MjIyNDMsImV4cCI6MjA5MTE5ODI0M30.Csu9nSaST-Xk2lir6ioLJWxMwqPneZvT7IuwSbMtjnI';
 let supa=null;
 let currentUser=null;
+let _syncState='guest';
 try{
   if(window.supabase&&window.supabase.createClient){
     supa=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
@@ -2072,6 +2073,7 @@ async function signOut(){
 }
 
 function setSyncStatus(state){
+  _syncState=state;
   const badge=document.getElementById('page-badge');
   if(!badge) return;
   if(!currentUser){badge.textContent='GUEST';badge.style.background='var(--gold-dim)';badge.style.color='var(--gold)';return;}
@@ -2093,8 +2095,9 @@ function setSyncStatus(state){
 function updateAuthUI(){
   const dot=document.getElementById('mobile-auth-dot');
   if(dot) dot.style.display=currentUser?'block':'none';
-  // Badge starts as GUEST; setSyncStatus() updates it once sync actually completes
-  setSyncStatus(currentUser?'syncing':'guest');
+  // Re-apply persisted sync state; only default to 'syncing' on fresh login (transitioning from guest)
+  if(!currentUser){_syncState='guest';}
+  setSyncStatus(currentUser?(_syncState==='guest'?'syncing':_syncState):'guest');
   updateGuestBanner();
   const footer=document.getElementById('sidebar-auth');
   if(!footer) return;
