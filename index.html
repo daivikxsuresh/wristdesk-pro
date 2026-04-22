@@ -1738,6 +1738,7 @@ input[type=date].form-input::-webkit-calendar-picker-indicator{filter:invert(0.6
     </div>
     <div id="profile-status" style="font-size:var(--text-xs);color:var(--text-faint);margin-bottom:0.8rem"></div>
     <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeProfileModal();signOut()" style="color:var(--red);opacity:0.7">Sign Out</button>
       <button class="btn-ghost" onclick="closeProfileModal()">Cancel</button>
       <button class="btn-primary" onclick="saveProfile()">Save</button>
     </div>
@@ -1747,7 +1748,7 @@ input[type=date].form-input::-webkit-calendar-picker-indicator{filter:invert(0.6
 <div class="toast-container" id="toast-container"></div>
 
 <!-- RESET PASSWORD MODAL -->
-<div class="modal-overlay" id="reset-pwd-modal">
+<div class="modal-overlay" id="reset-pwd-modal" onclick="if(event.target===this)closeResetPwdModal()">
   <div class="modal">
     <div class="modal-title">Set New Password</div>
     <div class="form-grid" style="grid-template-columns:1fr">
@@ -1756,7 +1757,8 @@ input[type=date].form-input::-webkit-calendar-picker-indicator{filter:invert(0.6
       <div id="reset-pwd-error" style="font-size:var(--text-xs);min-height:1rem"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn-primary" onclick="submitNewPassword()" style="width:100%">Update Password</button>
+      <button class="btn-ghost" onclick="closeResetPwdModal()">Cancel</button>
+      <button class="btn-primary" onclick="submitNewPassword()">Update Password</button>
     </div>
   </div>
 </div>
@@ -2132,6 +2134,13 @@ async function handleForgotPwd(){
   }catch(e){errEl.textContent=e.message||'Failed to send reset email.';errEl.style.color='var(--red)';}
 }
 
+function closeResetPwdModal(){
+  unlockScroll();
+  document.getElementById('reset-pwd-modal').classList.remove('open');
+  document.getElementById('reset-pwd-input').value='';
+  document.getElementById('reset-pwd-confirm').value='';
+  document.getElementById('reset-pwd-error').textContent='';
+}
 async function submitNewPassword(){
   const pwd=document.getElementById('reset-pwd-input').value;
   const confirm=document.getElementById('reset-pwd-confirm').value;
@@ -2142,22 +2151,15 @@ async function submitNewPassword(){
   try{
     const{error}=await supa.auth.updateUser({password:pwd});
     if(error) throw error;
-    unlockScroll();
-    document.getElementById('reset-pwd-modal').classList.remove('open');
-    document.getElementById('reset-pwd-input').value='';
-    document.getElementById('reset-pwd-confirm').value='';
+    closeResetPwdModal();
     showToast('Password updated successfully!');
   }catch(e){errEl.textContent=e.message||'Failed to update password.';errEl.style.color='var(--red)';}
 }
 
 function openAccountMenu(){
   if(!currentUser){openAuthModal();return;}
-  const name=getUserName();
-  const choice=prompt('Signed in as '+name+'\n('+currentUser.email+')\n\nType "profile" to edit profile, or "logout" to sign out:');
-  if(!choice) return;
-  const c=choice.trim().toLowerCase();
-  if(c==='logout'||c==='sign out'||c==='signout') signOut();
-  else if(c==='profile'||c==='edit') openProfileModal();
+  // On mobile use profile modal directly; sidebar already has Sign Out button
+  openProfileModal();
 }
 let signupThemePick='light';
 function pickTheme(t){
@@ -2263,7 +2265,8 @@ if(supa){
         }
       }
     } else if(wasLoggedIn){
-      // Logged out — revert to guest sample data and light theme
+      // Logged out — reset sync state, revert to guest sample data and light theme
+      _syncState='guest';
       applyTheme('light');
       inventory=loadInvLocal();
       nextId=Math.max(...inventory.map(w=>w.id),0)+1;
@@ -2436,37 +2439,41 @@ function renderKPIs(){
 }
 // Count-up animation — ticks KPI numbers from 0 to final value on dashboard entry
 let _kpiAnimating=false;
+let _kpiTimers=[];
 function countUpKPIs(){
   if(_kpiAnimating)return;
   _kpiAnimating=true;
+  _kpiTimers.forEach(t=>clearTimeout(t));_kpiTimers=[];
   document.querySelectorAll('#kpi-grid .kpi-value[data-raw]').forEach((el,i)=>{
     const raw=parseFloat(el.dataset.raw);
     const ftype=el.dataset.ftype;
     const sign=el.dataset.sign||'';
     if(isNaN(raw))return;
     const duration=900;const ease=t=>1-Math.pow(1-t,3);
-    setTimeout(()=>{
+    const tid=setTimeout(()=>{
       if(raw===0){return;}
       const start=performance.now();
       const absVal=Math.abs(raw);
+      let rafId;
       function tick(now){
         const t=Math.min((now-start)/duration,1);
         const cur=absVal*ease(t);
         if(ftype==='int')el.textContent=Math.round(cur);
         else if(ftype==='days')el.textContent=Math.round(cur)+'d';
         else el.textContent=(raw<0?'-':sign)+fmt(cur);
-        if(t<1)requestAnimationFrame(tick);
+        if(t<1){rafId=requestAnimationFrame(tick);}
         else{
-          // snap to exact final value
           if(ftype==='int')el.textContent=Math.round(raw);
           else if(ftype==='days')el.textContent=Math.round(raw)+'d';
           else el.textContent=(raw<0?'-':sign)+fmt(absVal);
         }
       }
-      requestAnimationFrame(tick);
+      rafId=requestAnimationFrame(tick);
     },i*80);
+    _kpiTimers.push(tid);
   });
-  setTimeout(()=>{_kpiAnimating=false;},1800);
+  const endTid=setTimeout(()=>{_kpiAnimating=false;},1800);
+  _kpiTimers.push(endTid);
 }
 
 // ── TABLES ──
