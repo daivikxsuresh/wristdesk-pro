@@ -2265,10 +2265,11 @@ if(supa){
         }
       }
     } else if(wasLoggedIn){
-      // Logged out — reset sync state, revert to guest sample data and light theme
+      // Logged out — clear cloud data from localStorage so next user starts fresh
       _syncState='guest';
+      try{localStorage.removeItem(STORAGE_KEY);}catch(e){}
       applyTheme('light');
-      inventory=loadInvLocal();
+      inventory=loadInvLocal(); // returns DEFAULT_INV demo data for guest view
       nextId=Math.max(...inventory.map(w=>w.id),0)+1;
       renderAll();
     }
