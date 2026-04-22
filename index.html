@@ -600,8 +600,14 @@ body::before{
   background:var(--navy-mid);border:1px solid rgba(201,169,110,0.08);
   border-radius:6px;padding:0.5rem 0.7rem;font-size:var(--text-sm);
   outline:none;transition:all var(--transition);color:var(--text-primary);
+  -webkit-appearance:none;appearance:none;width:100%;box-sizing:border-box;
 }
 .form-input:focus{border-color:rgba(201,169,110,0.3);background:var(--navy-light)}
+select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23c9a96e' opacity='.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.7rem center;padding-right:2rem;cursor:pointer}
+input[type=number].form-input::-webkit-inner-spin-button,
+input[type=number].form-input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+input[type=number].form-input{-moz-appearance:textfield}
+input[type=date].form-input::-webkit-calendar-picker-indicator{filter:invert(0.6) sepia(1) saturate(2) hue-rotate(5deg);cursor:pointer;opacity:0.6}
 .modal-footer{display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1.5rem}
 .btn-ghost{
   padding:0 1rem;height:36px;border-radius:6px;
@@ -1051,6 +1057,10 @@ body::before{
   }
   .sold-overlay.open .sold-card,.delete-overlay.open .delete-card{transform:translateY(0)}
   .form-grid{grid-template-columns:1fr}
+
+  /* Modal footer full-width on mobile */
+  .modal-footer{flex-direction:row;margin-top:1.25rem}
+  .modal-footer .btn-ghost,.modal-footer .btn-primary{flex:1;text-align:center;justify-content:center}
 
   /* AI panel in dedicated tab */
   .ai-messages{max-height:none;min-height:150px}
